@@ -496,10 +496,7 @@ since, in contrast to `google-authenticator`, only current and future TOTP codes
 The next argument is the name of the user where this TOTP setup is applied to. The `-` means that no additional PIN is required (only for use with other external authentication services).
 Copy the file to the correct location:
 ```bash
-sudo rm -f /etc/users.oath
-sudo cp ~/TOTP /etc/users.oath
-sudo chown root /etc/users.oath
-sudo chmod 0600 /etc/users.oath
+sudo install --owner root --mode 0600 ~/TOTP /etc/users.oath
 rm -f ~/TOTP
 ```
 To show the secret in base32 (e.g. for use in a 2FA app), run
@@ -681,10 +678,7 @@ Install the `pam_oath` PAM module as described above. When generating the config
 ```bash
 LC_ALL=C tr -dc 'a-f0-9' </dev/urandom | head -c64 > ~/secret.txt
 echo -n "HOTP $USER - " | cat - ~/secret.txt > ~/HOTP
-sudo rm -f /etc/users.oath
-sudo cp ~/HOTP /etc/users.oath
-sudo chown root /etc/users.oath
-sudo chmod 0600 /etc/users.oath
+sudo install --owner root --mode 0600 ~/HOTP /etc/users.oath
 rm -f ~/HOTP
 ```
 In `/etc/pam.d/sshd`, add
@@ -1071,9 +1065,7 @@ while True:
             # HERE - add code to e.g. send an email notification
             print(content)
 EOF
-sudo cp ~/myMonitorScript.py /etc/myMonitorScript.py
-sudo chown root:root /etc/myMonitorScript.py
-sudo chmod 700 /etc/myMonitorScript.py
+sudo install --owner root --group root --mode 0600 ~/myMonitorScript.py /etc/myMonitorScript.py
 sudo rm -rf ~/myMonitorScript.py
 ```
 This will do a configered action, e.g. send an email, whenever a successful login on the server occurs. Run this script on startup:
