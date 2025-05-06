@@ -364,6 +364,8 @@ Protocol 2 # default: "2,1"
 UseRoaming no # deprecated
 ObscureKeystrokeTiming yes # default yes
 IdentitiesOnly yes # only send specified public keys to the server
+ForwardAgent no # do not send the ssh agent to the server
+IdentitiesOnly yes # do not offer all keys when conneting but rely on a specific one
 
 # specific settings for the server. Host blocks should be placed at the end of the file (similar to "Match" above)
 Host myserver # set a name for the new connection. Can be any name
