@@ -396,9 +396,9 @@ When setting `StrictHostKeyChecking yes`, connections to unknown servers will be
 ssh-keyscan -p 22 -O hashalg=sha256 -H -t ed25519 [IP or hostname]
 ```
 where
-  - `p` is the port (default: 22)
+  - `-p` is the port of the server (default: 22)
   - `-H` specifies that the hostname should be hashed
-  - `hashalg` specifies the hashing algorithm
+  - `-O hashalg` specifies the hashing algorithm
   - `-t` specifies which host key to fetch (could also be `rsa`, `ed25519-sk` ...). Can be omitted to get the default host key.
 Add the host key to `~/.ssh/known_hosts` to allow connections to this server.
 
