@@ -364,8 +364,10 @@ Protocol 2 # default: "2,1"
 UseRoaming no # deprecated
 ObscureKeystrokeTiming yes # default yes
 IdentitiesOnly yes # only send specified public keys to the server
-ForwardAgent no # do not send the ssh agent to the server
+ForwardAgent no # do not send the ssh agent to the server. Default: no
 IdentitiesOnly yes # do not offer all keys when conneting but rely on a specific one
+StrictHostKeyChecking yes # do not allow connecting to an unknown server
+                          # default "ask"
 
 # specific settings for the server. Host blocks should be placed at the end of the file (similar to "Match" above)
 Host myserver # set a name for the new connection. Can be any name
@@ -374,9 +376,6 @@ Host myserver # set a name for the new connection. Can be any name
     IdentityFile ~/.ssh/myClientSSHKey # whatever the filename was during key generation
     Port 573 # same as the one specified on the server
     ForwardX11 no # default: no. Unless X connections should be used
-    StrictHostKeyChecking yes # careful: only set this to yes AFTER having logged into the server once
-                              # (an entry in ~/.ssh/known_hosts must already exist)
-                              # See also the section about host key signing below
     PreferredAuthentications publickey # match this with the server
     AddKeysToAgent yes # convenience: will remember the private key in the ssh-agent so
                        # passwords have to be typed only once per session
@@ -392,6 +391,17 @@ Host myserver # set a name for the new connection. Can be any name
     FingerprintHash sha256
     RequiredRSASize 4096
 ```
+When setting `StrictHostKeyChecking yes`, connections to unknown servers will be blocked. One way to circument this is to manually get the server's host key by running
+```bash
+ssh-keyscan -p 22 -O hashalg=sha256 -H -t ed25519 [IP or hostname]
+```
+where
+  - `p` is the port (default: 22)
+  - `-H` specifies that the hostname should be hashed
+  - `hashalg` specifies the hashing algorithm
+  - `-t` specifies which host key to fetch (could also be `rsa`, `ed25519-sk` ...). Can be omitted to get the default host key.
+Add the host key to `~/.ssh/known_hosts` to allow connections to this server.
+
 Now, connection is possible with, e.g.
 ```bash
 ssh myserver
