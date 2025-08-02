@@ -1319,6 +1319,8 @@ ForceCommand internal-sftp -R
 ```
 and add `-d` and/or `-u` as needed. The option `-R` means read-only access. Access can further be controlled by using `-p` to whitelist requests and `-P` to blacklist requests (e.g. `-p realpath,open,write,close,lstat`). Note that the "requests" are not sftp commands. Supported requests can be found by running `/usr/lib/openssh/sftp-server -Q requests`. Restrictions in `authorized_keys` can be the same as in [Creating a locked-down user, e.g. for tunneling/SFTP](#todo). The `ForceCommand` setting in `sshd_config` takes precedence over the `command` option in `authorized_keys`.
 
+Note that `DisableForwarding` can always be set to `yes` in the `sshd_config` of the sshd server where the sftp connection is made to and `restrict` can be set in `authorized_keys`, even when intermediate proxy jumps may be configured. The forwarding options are only relevant for the proxy hosts themselves, not for the desitation (see TODO:tunnel_section for more details).
+
 ## Tunneling with SSH
 
 SSH offers different types of tunneling/forwarding:
@@ -1332,9 +1334,15 @@ SSH offers different types of tunneling/forwarding:
 For the remainder of this section, the following convention will be used:
 * Client (`C`) denotes the machine that initiates the ssh connection. No ssh server (`sshd`) has to run on that machine (TODO: check if true for -W)
 * Proxy server (`P1`, `P2`, ...) are machines used as jump hosts (each running sshd) to reach the destination sshd server
-* Destination server (`D`): Destination sshd server of the connection
-* Remote server (`R1`, `R2`, ...): Remote servers accessed from or granting access to the client (`C`). No sshd has to run on these servers.
-* Users (`U1`, `U2`, ...): Machines that can use the connection set up by the client (`C`)
+* Destination server (`D`) (sshd server) of the connection
+* Remote servers (`R1`, `R2`, ...) accessed from or granting access to the client (`C`). No sshd has to run on these servers.
+* Users (`U1`, `U2`, ...) are machines that can use the connection set up by the client (`C`)
+
+There are some useful general options when establishing tunnels. 
+-f
+-N
+
+Also note that the ssh agend should never be forwarded. With the introduction of proxy jumps, this is no longer necessary.
 
 Relevant options in sshd_config:
     DisableForwarding yes # Disables all forwarding features.
@@ -1347,6 +1355,8 @@ Relevant options in sshd_config:
     PermitOpen none
     PermitTunnel no
     X11Forwarding no
+
+TODO: client-side settings
 
 -J: DisableForwarding yes can be set on the final server if that server is not doing any forwarding, does not affect jump hosts connecting to that server
 
