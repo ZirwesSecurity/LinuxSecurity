@@ -1309,7 +1309,7 @@ sudo mkdir -p /etc/jail/upload
 sudo chown mynewuser:mynewgroup /etc/jail/upload
 sudo chmod 777 /etc/jail/upload
 ```
-Note that it is required that all directories up to and including `/var/www/example.com/` are owned by root and do not have write permissions for the new user. The entry `ChrootDirectory /var/www/example.com/ -d shared_files -u 022` means that the SFTP session is chrooted to `/var/www/example.com/` and that the start of the session (`-d`) is in `/var/www/example.com/shared_files`, where the new user has write permissions. `-u 022` means that files uploaded from the SFTP session have a umask of 022 (if the destination permits this and if the source file at least has these permissions). The second important setting is `ForceCommand internal-sftp`, which forces the connection to be an SFTP connection, i.e. it prevents an interactive shell. In this way, `ssh user@server` is rejected and only `sftp user@server` connections can be established.
+Note that it is required that all directories up to and including `/var/www/example.com/` are owned by root and do not have write permissions for the new user. The entry `ChrootDirectory /var/www/example.com/ -d shared_files -u 022` means that the SFTP session is chrooted to `/var/www/example.com/` and that the start of the session (`-d`) is in `/var/www/example.com/shared_files`, where the new user has write permissions. `-u 022` means that files uploaded from the SFTP session have a umask of 022 (if the destination permits this and if the source file at least has these permissions). The second important setting is `ForceCommand internal-sftp`, which forces the connection to be an SFTP connection, i.e. it prevents an interactive shell. In this way, `ssh user@server` is rejected and only `sftp user@server` connections can be established. Generally, `internal-sftp` is preferred over `sftp-server`.
 
 The SFTP session can further be restricted, e.g. by allowing only read acceess. First, make sure there are no write permissions for the sftp uer in the chrooted directory, as described in [Creating a locked-down user, e.g. for tunneling/SFTP](#todo). Then in `sshd_config`, modify the `ForceCommand` entry to
 ```bash
@@ -1338,6 +1338,8 @@ Relevant options in sshd_config:
     PermitOpen none
     PermitTunnel no
     X11Forwarding no
+
+-J: DisableForwarding yes can be set on the final server if that server is not doing any forwarding, does not affect jump hosts connecting to that server
 
 
 TODO: the proxyJump sshd does not need the any settings of the final server (e.g. sftp, remote forwarding), and the final server does not need to allow any forwarding options
