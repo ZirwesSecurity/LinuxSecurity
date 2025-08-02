@@ -130,14 +130,7 @@ or do this implicitly by accepting the fingerprint on the first connection if yo
 ssh-copy-id -i ~/.ssh/${mykeyname}.pub myServerUser@ip
 ```
 This will add the public key to the server's `/home/myServerUser/.ssh/authorized_keys` (this also checks that the public key was specified.
-If the private key was specified, the public key is sent instead).
-Optionally, the keyword `restrict` can be added as the first word to the beginning of a specific public key line in `authorized_keys` to strict forwarding, e.g.
-```
-restrict ssh-rsa AAAA123456...789 keyname
-```
-or access using this key can be restricted to specific IPs, running specific commands, ... (see https://manpages.debian.org/unstable/openssh-server/authorized_keys.5.en.html).
-To revoke access of this specific key later on, simply delete the corresponding line from `/home/myServerUser/.ssh/authorized_keys` on the server and restart the ssh(d) service.
-For an alternative revocation mechanism, see the last part in [Client key signing](#client-key-signing).
+If the private key was specified, the public key is sent instead). See also [TODO:section_atuthorized_keys]
 
 ## Harden the server configuration
 
@@ -359,6 +352,45 @@ PerSourcePenaltyExemptList 192.168.0.0/16 # specify sources which are exempt fro
 #   RefuseConnection
 
 ```
+
+## Additing restrictions to public keys
+
+When adding a public key to a user's `authorized_keys`, additional restrictions can be added  as a comma-separated list for use with this specific key. For example:
+```
+restrict,port-forwarding,permitopen="192.168.178.46:3002",from="192.168.178.26/32",command="/bin/false" ssh-ed25519 AAAA....
+```
+The `restrict` keyword disables many ssh features and is equivalent to specifying the following options
+* `no-agend-forwarding`: do not forward ssh agents
+* `no-port-forwarding`: do not allow any port forwarding
+* `no-pty`: do not allow an interactive shell
+* `no-X11-forwarding`: do not allow X11 forwarding
+* `no-user-rc`: do not allow loading the user's `.rc` file
+The `restrict` keyword can be used together with manually allowing some features, e.g.
+```
+restrict,port-forwarding,pty ssh-ed25519 AAAA....
+```
+This disables all features listed above, but allows port forwarding and interactive shells.
+
+The `from` keyword allows use of the public key only from specified hostnames, e.g.
+```
+restrict,from="127.0.0.1,192.168.178.26/24,example.com" ssh-ed25519 AAAA....
+```
+This allows using the public key from the IP 127.0.0.1. the local subnet 192.168.178.* and the hostname example.com.
+
+The `command` forces the execution of the specified command after authentication and disallows any other commands. See TODO:sftp and TODO:tunnel_section for more information.
+
+Other options are:
+* `environment=""`: sets environt variables for the session
+* `expiry-time="timespec"`: Specifies when use of this public key expires
+* `permitopen="...",permitlisten="..."`: See section TODO:tunel for more information
+* `verify-required`: When using a hardware key, require PIN or biometrics verification (see also section TODO:yubikey)
+
+TODO: order of precedence with sshd_config
+
+
+To revoke access of this specific key later on, simply delete the corresponding line from `/home/myServerUser/.ssh/authorized_keys` on the server and restart the ssh(d) service.
+For an alternative revocation mechanism, see the last part in [Client key signing](#client-key-signing).
+For more information about the authorized_keys format, see https://manpages.debian.org/unstable/openssh-server/authorized_keys.5.en.html.
 
 ## Additional client convenience settings
 
