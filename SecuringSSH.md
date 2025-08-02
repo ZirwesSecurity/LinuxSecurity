@@ -6,6 +6,7 @@
 - [Initial steps on the server](#initial-steps-on-the-server)
 - [Generating SSH keys on the client](#generating-ssh-keys-on-the-client)
 - [Harden the server configuration](#harden-the-server-configuration)
+- [Additing restrictions to public keys](#additing-restrictions-to-public-keys)
 - [Additional client convenience settings](#additional-client-convenience-settings)
 - [2FA with TOTP](#2fa-with-totp)
   - [Option 1: google-authenticator TOTP](#option-1-google-authenticator-totp)
