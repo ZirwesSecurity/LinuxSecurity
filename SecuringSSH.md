@@ -1320,7 +1320,7 @@ and add `-d` and/or `-u` as needed. The option `-R` means read-only access. Acce
 ## Tunneling with SSH
 
 SSH offers different types of tunneling/forwarding:
-* `ForwardX11 (-X), ForwardTrustedX11 (-Y)`: Forward an X11 connection from the server to the client
+* `ForwardX11 (-X, -x), ForwardTrustedX11 (-Y)`: Forward an X11 connection from the server to the client
 * `ProxyJump (-J)`: Connect to an ssh server via one or more proxy jump hosts
 * `LocalForward (-L)`: Forward a port from an ssh server to the client machine
 * `RemoteForward (-R)`: Forward a port from the client machine to an ssh server
