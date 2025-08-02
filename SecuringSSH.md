@@ -1269,7 +1269,8 @@ Match User $mynewuser Address 192.168.*.* # the Address part is optional
     PermitUserRC no
 
     # Optional: kill unused connection after some time
-    ClientAliveInterval 1800 # every half hour, check if connection is active
+    ClientAliveInterval 30 # every 30s, check if connection is active
+    ClientAliveCountMax 300 # terminate connection after 300 failed client alive messages
     ChannelTimeout *=60m # after 60 minutes of inactivity on any channel, flag connection as unused
     UnusedConnectionTimeout 5m # once flagged as unused, terminate the session after 5 minutes
 
