@@ -22,7 +22,7 @@
   - [Host key signing](#host-key-signing)
 - [Restricting access by time of day](#restricting-access-by-time-of-day)
 - [Monitor logins](#monitor-logins)
-- [Creating a locked-down user, e.g. for tunneling/SFTP](#creating-a-locked-down-user-e-g-for-tunneling-sftp)
+- [Creating a locked-down user, e.g. for tunneling/SFTP](#creating-a-locked-down-user-for-eg-for-tunnelingsftp)
 - [Restricting SFTP](#restricting-sftp)
 - [Tunneling with SSH](#tunneling-with-ssh)
 
