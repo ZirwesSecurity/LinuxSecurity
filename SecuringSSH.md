@@ -1281,6 +1281,36 @@ EOF
 
 ## Restricting SFTP
 
+In order to create an isolated SFTP connection, create a new user as described in [Creating a locked-down user, e.g. for tunneling/SFTP](#todo). Based on this configuration, the following changes in `sshd_config` need to be made:
+```bash
+Subsystem  sftp internal-sftp # enable SFTP globally
+
+# match the dedicated SFTP user, optionally restricted to a certain IP (range) or hostname(s)
+Match User myNewUser Address 192.168.178.46 
+    AuthenticationMethods publickey
+    ChrootDirectory /var/www/example.com/ -d shared_files -u 022
+    ForceCommand internal-sftp
+    PermitTTY no
+    AuthorizedKeysFile /etc/%u_authorized_keys
+    DisableForwarding yes # disable all forms of forwarding/tunneling
+    PermitUserRC no
+    # Optional: kill unused connection after some time
+    ClientAliveInterval 30 # every 30s, check if connection is active
+    ClientAliveCountMax 300 # terminate connection after 300 failed client alive messages
+    ChannelTimeout *=60m # after 60 minutes of inactivity on any channel, flag connection as unused
+    UnusedConnectionTimeout 5m # once flagged as unused, terminate the session after 5 minutes
+```
+SSH makes it easy to `ChrootDirectory` the SFTP session. In this example, an upload directory for a website was created with:
+```bash
+sudo mkdir -p /var/www/example.com/shared_files
+sudo chown -R $mynewuser:$mynewgroup /var/www/example.com/shared_files
+sudo chmod -R 755 /var/www/example.com/shared_files
+sudo mkdir -p /etc/jail/upload
+sudo chown mynewuser:mynewgroup /etc/jail/upload
+sudo chmod 777 /etc/jail/upload
+```
+Note that it is required that all directories up to `/var/www/example.com/` are owned by root and do not have write permissions for the new user. The entry `ChrootDirectory /var/www/example.com/ -d shared_files -u 022` means that the SFTP session is chrooted to `/var/www/example.com/` and the start of the session (`-d`) is in `/var/www/example.com/shared_files`, where the new user has write permissions. `-u 022` means that files uploaded from the SFTP session have a umask of 022 (if permitted).
+
 ## Tunneling with SSH
 
 SSH offers different types of tunneling/forwarding:
@@ -1304,7 +1334,7 @@ Relevant options in sshd_config:
     X11Forwarding no
 
 
-TODO
+TODO: the proxyJump sshd does not need the any settings of the final server (e.g. sftp, remote forwarding), and the final server does not need to allow any forwarding options
 
 ssh -L 25:abc:25 def
 
