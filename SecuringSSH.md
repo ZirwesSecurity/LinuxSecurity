@@ -188,7 +188,7 @@ KerberosAuthentication no
 
 # Optionally, add a "Match" block (should always be put at the very end of sshd_config because the indentations used below
 # are ignored and simply everything after the "Match" line and before the next "Match" line is considered part of the
-# Match block). This example overwrites the settings above for any login for the specified user
+# Match block!). This example overwrites the settings above for any login for the specified user
 # from the specified IP. Any number of "match" conditions can be put into the first line (here: user name and IP)
 # Example use case: default settings above only allow public key for the user from any IP, but if the connection comes from
 # the local network, also optionally allow password.
@@ -262,6 +262,7 @@ X11Forwarding no
 # Miscellaneous
 PrintMotd no
 Banner no
+VersionAddendum none
 
 # ============= /Hardened settings ===============
 ```
@@ -382,7 +383,7 @@ The `command` forces the execution of the specified command after authentication
 Other options are:
 * `environment=""`: sets environt variables for the session
 * `expiry-time="timespec"`: Specifies when use of this public key expires
-* `permitopen="...",permitlisten="..."`: See section TODO:tunel for more information
+* `permitopen="...",permitlisten="...",tunnel="n"`: See section TODO:tunel for more information
 * `verify-required`: When using a hardware key, require PIN or biometrics verification (see also section TODO:yubikey)
 
 TODO: order of precedence with sshd_config
@@ -400,12 +401,15 @@ On the **client**, add the following to `~/.ssh/config` (might not exist yet):
 HashKnownHosts yes
 Protocol 2 # default: "2,1"
 UseRoaming no # deprecated
+FingerprintHash sha256
 ObscureKeystrokeTiming yes # default yes
 IdentitiesOnly yes # only send specified public keys to the server
 ForwardAgent no # do not send the ssh agent to the server. Default: no
 IdentitiesOnly yes # do not offer all keys when conneting but rely on a specific one
 StrictHostKeyChecking yes # do not allow connecting to an unknown server
                           # default "ask"
+TCPKeepAlive no
+VersionAddendum none
 
 # specific settings for the server. Host blocks should be placed at the end of the file (similar to "Match" above)
 Host myserver # set a name for the new connection. Can be any name
