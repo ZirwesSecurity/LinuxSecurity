@@ -476,6 +476,8 @@ For `ssh-copy-id`, if a new public key should be copied to the server while a pr
 use `-f` and both `-i` and `-o IdentityFile`.
 If signed public keys are used (see [Client key signing](#client-key-signing)), also add `-o CertificateFile=myServerKey-cert.pub`.
 
+Note that the correct permissions for `~/.ssh` and the files therein (both on the client and the server user) have to be set (generally owned by the user and not readable by other users). Otherwise, public key authentication is implicitly disabled by ssh.
+
 ## 2FA with TOTP
 
 If login is restricted to `publickey` only, a second factor is technically already provided by the passphrase protecting the private key.
@@ -1196,7 +1198,7 @@ In `/etc/ssh/sshd_config`, configure a Match block for the new user that applies
 * `ChrootDirectory`: chroot the connection to a given directory
 * `ForceCommand`:  Forces execution of a given command and prevent exectution of all other commands
 * `PermitTTY`: Do not permit interactive shell access
-* `AuthorizedKeysFile`: `location of the authorized_keys file not modifyable by the user`
+* `AuthorizedKeysFile`: location of the authorized_keys file not modifyable by the user
 * `DisableForwarding`: disable all types of forwarding/tunneling (see TODO:tunneling for more information)
 * `PermitUserRC`: do not allow loading the user's `ssh/rc` file
 * Set up connection timeouts for idle connections (see also TODO:connection_timeouts)
