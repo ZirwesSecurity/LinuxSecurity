@@ -1283,6 +1283,14 @@ EOF
 
 ## Tunneling with SSH
 
+SSH offers different types of tunneling/forwarding:
+* `ForwardX11 (-X), ForwardTrustedX11 (-Y)`: Forward an X11 connection from the server to the client
+* `ProxyJump (-J)`: Connect to an ssh server via one or more proxy jump hosts
+* `LocalForward (-L)`: Forward a port from an ssh server to the client machine
+* `RemoteForward (-R)`: Forward a port from the client machine to an ssh server
+* `DynamicForward (-D)`: Use the ssh server as SOCKS4/5 proxy server
+* `Tunnel (-W)`: Set up a tunnel between client machine and ssh server, pretty much a VPN tunnel
+
 Relevant options in sshd_config:
     DisableForwarding yes # Disables all forwarding features.
     # Optionally, disable/enable all options manually as follows:
