@@ -1322,12 +1322,19 @@ and add `-d` and/or `-u` as needed. The option `-R` means read-only access. Acce
 ## Tunneling with SSH
 
 SSH offers different types of tunneling/forwarding:
-* `ForwardX11 (-X, -x), ForwardTrustedX11 (-Y)`: Forward an X11 connection from the server to the client
 * `ProxyJump (-J)`: Connect to an ssh server via one or more proxy jump hosts
+* `ForwardX11 (-X, -x), ForwardTrustedX11 (-Y)`: Forward an X11 connection from the server to the client
 * `LocalForward (-L)`: Forward a port from an ssh server to the client machine
 * `RemoteForward (-R)`: Forward a port from the client machine to an ssh server
 * `DynamicForward (-D)`: Use the ssh server as SOCKS4/5 proxy server
 * `Tunnel (-W)`: Set up a tunnel between client machine and ssh server, pretty much a VPN tunnel
+
+For the remainder of this section, the following convention will be used:
+* Client (`C`) denotes the machine that initiates the ssh connection. No ssh server (`sshd`) has to run on that machine (TODO: check if true for -W)
+* Proxy server (`P1`, `P2`, ...) are machines used as jump hosts (each running sshd) to reach the destination sshd server
+* Destination server (`D`): Destination sshd server of the connection
+* Remote server (`R1`, `R2`, ...): Remote servers accessed from or granting access to the client (`C`). No sshd has to run on these servers.
+* Users (`U1`, `U2`, ...): Machines that can use the connection set up by the client (`C`)
 
 Relevant options in sshd_config:
     DisableForwarding yes # Disables all forwarding features.
