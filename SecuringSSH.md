@@ -22,7 +22,9 @@
   - [Host key signing](#host-key-signing)
 - [Restricting access by time of day](#restricting-access-by-time-of-day)
 - [Monitor logins](#monitor-logins)
-- [Tunneling](#tunneling)
+- [Creating a locked-down user, e.g. for tunneling/SFTP](#creating-a-locked-down-user-e-g-for-tunneling-sftp)
+- [Restricting SFTP](#restricting-sftp)
+- [Tunneling with SSH](#tunneling-with-ssh)
 
 This section covers different ways of securing SSH server authentication. Everything was tested with Ubuntu 24.04 LTS and a fairly recent version of OpenSSH packaged with Ubuntu (>= 9.2).
 However, most aspects discussed here are operating system agnostic. The focus lies on configuring SSH (including some additional PAM modules).
@@ -33,8 +35,6 @@ Also, basic experience with SSH is recommended before reading on.
 
 The terms *server* and *host* are used interchangeably to refer to the machine running sshd, which may be a local home server, a VPS, ...
 *Client* is used to refer to a machine connecting to the *server*. All commands are presented assuming a sudo user.
-
-TODO test on debian 12
 
 ## Install the SSH server daemon (sshd)
 
@@ -1148,7 +1148,11 @@ to see if the change was successful. Reboot the server
 reboot
 ```
 
-## Tunneling
+## Creating a locked-down user for, e.g. for tunneling/SFTP
+
+## Restricting SFTP
+
+## Tunneling with SSH
 
 TODO
 
