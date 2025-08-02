@@ -409,7 +409,7 @@ ForwardAgent no # do not send the ssh agent to the server. Default: no
 IdentitiesOnly yes # do not offer all keys when conneting but rely on a specific one
 StrictHostKeyChecking yes # do not allow connecting to an unknown server
                           # default "ask"
-TCPKeepAlive no
+#TCPKeepAlive no # TODO
 VersionAddendum none
 
 # specific settings for the server. Host blocks should be placed at the end of the file (similar to "Match" above)
