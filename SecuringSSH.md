@@ -1150,14 +1150,14 @@ reboot
 
 ## Creating a locked-down user, e.g. for tunneling/SFTP
 
-It can be useful to have a locked-down user for use with special-purpose SSH usage, e.g. for forwarding connections on a proxy server (see TODO:section_tunneling) or restricting use of SFTP (see TODO:section_sftp). The following steps create a user without interactive shell that cannot be logged into (run everything as root, see the convenience script at the end of the section:
+It can be useful to have a locked-down user for use with special-purpose SSH usage, e.g. for forwarding connections on a proxy server (see TODO:section_tunneling) or restricting use of SFTP (see TODO:section_sftp). The following steps create a user without interactive shell that cannot be logged into and that disables all SSH functionality. Note that this only serves as the baseline configuration for the examples given later in TODO:SFTP and TODO:tunnel_user. 
 ```bash
 # decide on a name for the new user, e.g. a randomly generated name
 mynewuser=$(LC_ALL=C tr -dc 'a-z' </dev/urandom | head -c 15)
 # create a group for the user where the new user is the only member
 mynewgroup="${mynewuser}_g"
-groupadd $mynewgroup
-useradd -r -M -N -s /bin/false -g $mynewgroup $mynewuser
+sudo groupadd $mynewgroup
+sudo useradd -r -M -N -s /bin/false -g $mynewgroup $mynewuser
 ```
 The `useradd` command creates the new user with the following options:
 * `-r`: create a system user (has a locked password)
@@ -1168,8 +1168,17 @@ The `useradd` command creates the new user with the following options:
 
 Of course, this new user should be unpriviliged (e.g., do not add to the sudoers). To double-check that this worked, look for a `!` in the second entry of `/etc/shadow` (locked password) and the correct shell in the last entry of `/etc/passwd`. If the password is not locked, it can be manually locked by running
 ```bash
-passwd --lock $mynewuser
+sudo passwd --lock $mynewuser
 ```
+
+Next, create a directory to chroot the user into. Here, ssh's chroot will be set up (again, run everything as root):
+```
+sudo mkdir /etc/jail/$mynewuser
+sudo chown -R :$mynewgroup /etc/jail/$mynewuser
+sudo chmod -R g+r /etc/jail/$mynewuser
+```
+The new directory has no write permissions for the new user. For ssh's chroot to work, all directories up to the last one must be owned by root and not writable for the user (for other examples, see TODO:section_sftp and TODO:section_tunneling).
+
 
 ## Restricting SFTP
 
