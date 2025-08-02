@@ -1172,17 +1172,128 @@ sudo passwd --lock $mynewuser
 ```
 
 Next, create a directory to chroot the user into. Here, ssh's chroot will be set up (again, run everything as root):
-```
+```bash
 sudo mkdir /etc/jail/$mynewuser
 sudo chown -R :$mynewgroup /etc/jail/$mynewuser
 sudo chmod -R g+r /etc/jail/$mynewuser
 ```
 The new directory has no write permissions for the new user. For ssh's chroot to work, all directories up to the last one must be owned by root and not writable for the user (for other examples, see TODO:section_sftp and TODO:section_tunneling).
 
+To restrict authentication for this special-purpose user, require login via (at least) public key authentication. The `authorized_keys` file should not be modifyable by the user, so create it with
+```bash
+sudo touch /etc/${mynewuser}_authorized_keys
+sudo chmod 600 /etc/${mynewuser}_authorized_keys
+sudo chgrp $mynewgroup /etc/${mynewuser}_authorized_keys
+sudo chmod g+r /etc/${mynewuser}_authorized_keys
+```
+After generating a new public key for the user, add full restrictions for key usage in `/etc/${mynewuser}_authorized_keys`:
+```bash
+restrict,from="192.168.178.0/24",command="/bin/false" ssh-ed25519 AAAAC3...
+```
+
+In `/etc/ssh/sshd_config`, configure a Match block for the new user that applies all restrictions:
+* `Address`: Limit connections from a specified IP (range) or hostname
+* `ChrootDirectory`: chroot the connection to a given directory
+* `ForceCommand`:  Forces execution of a given command and prevent exectution of all other commands
+* `PermitTTY`: Do not permit interactive shell access
+* `AuthorizedKeysFile`: `location of the authorized_keys file not modifyable by the user`
+* `DisableForwarding`: disable all types of forwarding/tunneling (see TODO:tunneling for more information)
+* `PermitUserRC`: do not allow loading the user's `ssh/rc` file
+* Set up connection timeouts for idle connections (see also TODO:connection_timeouts)
+
+The script below simplifies the creation of a locked-down user as described above. Adjust as needed. After running the script, copy and paste the section for `sshd_config` (note again that the match block should be placed at the end of `sshd_config`, since everything after the `Match` line is considered part of the match block until the next match block is found):
+```bash
+set -e
+# ========================= settings =========================
+# for example: generate a random user name
+mynewuser=$(LC_ALL=C tr -dc 'a-z' </dev/urandom | head -c 15)
+# options for authorized_keys
+# Here: disable all tunneling options (restrict), only allow connections from
+# local network ("from") and do not allow interactive shell ("command")
+key_prefix='restrict,from="192.168.178.0/24",command="/bin/false"'
+# public key used for authentiation
+public_key='ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOQgmtKptb7Ayc6Pm7EvKNJQNt1IX2RFS4OxeUjk3JmP'
+# group name for the new user
+mynewgroup="${mynewuser}_g"
+
+
+# create new user and group
+groupadd $mynewgroup
+useradd -r -M -N -s /bin/false -g $mynewgroup $mynewuser
+# create a directory for ssh's chroot
+mkdir /etc/jail/$mynewuser
+chown -R :$mynewgroup /etc/jail/$mynewuser
+chmod -R g+r /etc/jail/$mynewuser
+# create authorized_keys for the new user
+echo "$key_prefix $public_key" > /etc/${mynewuser}_authorized_keys
+chmod 600 /etc/${mynewuser}_authorized_keys
+chgrp $mynewgroup /etc/${mynewuser}_authorized_keys
+chmod g+r /etc/${mynewuser}_authorized_keys
+
+echo "New user name: $mynewuser"
+echo "New group name: $mynewgroup"
+echo "Don't forget to add the new user and group to 'AllowUsers' and 'AllowGroups' if necessary"
+echo ""
+echo "Add to sshd_config:"
+echo ""
+cat << EOF
+Match User $mynewuser Address 192.168.*.* # the Address part is optional
+    # only allow public key authentication
+    AuthenticationMethods publickey
+
+    # chroot the connection
+    ChrootDirectory /etc/jail/$mynewuser
+
+    # Forces execution of this command on login and disables any other command
+    ForceCommand /bin/false
+
+    # do not permit interactive shell access
+    PermitTTY no
+
+    # authorized_keys file not modifiable by user
+    AuthorizedKeysFile /etc/%u_authorized_keys # %u is the username
+
+    # do not allow any kind of forwarding/tunneling/connections
+    DisableForwarding yes # Disables all forwarding features.
+    # Optionally, disable/enable all options manually as follows:
+    AllowAgentForwarding no
+    AllowStreamLocalForwarding no
+    AllowTcpForwarding no
+    GatewayPorts no
+    PermitListen none
+    PermitOpen none
+    PermitTunnel no
+    X11Forwarding no
+
+    # disallow setting environment variables
+    PermitUserRC no
+
+    # Optional: kill unused connection after some time
+    ClientAliveInterval 1800 # every half hour, check if connection is active
+    ChannelTimeout *=60m # after 60 minutes of inactivity on any channel, flag connection as unused
+    UnusedConnectionTimeout 5m # once flagged as unused, terminate the session after 5 minutes
+
+    # miscellaneous
+    Banner no
+EOF
+```
 
 ## Restricting SFTP
 
 ## Tunneling with SSH
+
+Relevant options in sshd_config:
+    DisableForwarding yes # Disables all forwarding features.
+    # Optionally, disable/enable all options manually as follows:
+    AllowAgentForwarding no
+    AllowStreamLocalForwarding no
+    AllowTcpForwarding no
+    GatewayPorts no
+    PermitListen none
+    PermitOpen none
+    PermitTunnel no
+    X11Forwarding no
+
 
 TODO
 
