@@ -170,11 +170,11 @@ RequiredRSASize 4096 # will reject public key authentication with RSA keys < 409
 AllowUsers myServerUser@192.168.*.* # IMPORTANT: this restricts login to the local network.
                                     # Could also replace with specific IP or simply write "AllowUsers myServerUser"
                                     # without specifying an IP to allow login from anywhere to that user.
-                                    # This is a comma-separated list.
-AllowGroups mysshgroup # to login to a user, the user must be part of this group (comma-separated list)
+                                    # This is a space-separated list, i.e. AllowUsers user1 user2@ip user3
+AllowGroups mysshgroup # to login to a user, the user must be part of this group (space-separated list)
 # Order of checking is DenyUsers, AllowUsers, DenyGroups, finally AllowGroups
 # There is also the option 'ListenAddress' to restrict listening to specific IPs and ports.
-# This makes sense if the server can be reached through multiple IPs/has multiple network devices.
+# This makes sense if the server can be reached through multiple IPs/has multiple network devices/subnets.
 
 # Disable all authentication methods except public key authentication. When using a "Match" block (see below),
 # then "PubkeyAuthentication" could be set to "no" and "AuthenticationMethods" to "none". In this way, logging in
@@ -199,7 +199,7 @@ KerberosAuthentication no
 # from the specified IP. Any number of "match" conditions can be put into the first line (here: user name and IP)
 # Example use case: default settings above only allow public key for the user from any IP, but if the connection comes from
 # the local network, also optionally allow password.
-#Match User myServerUser Address 192.168.0.0/16 # matches the specified user and any IP with 192.168.*.*
+#Match User myServerUser Address 192.168.0.* # matches the specified user and any IP with 192.168.0.*
 #    AuthenticationMethods publickey password # for example: this allows public key OR password authentication
                                               # when connecting from the local network 
 #    PasswordAuthentication yes
@@ -243,27 +243,33 @@ MaxAuthTries 6    # default: 6. Closes connection after this many authentication
                   # Once the number of failures reaches half this value,
                   # additional failures are logged. TODO: interaction with fail2ban and PAM?
 MaxSessions 10    # per user concurrently active sessions on the server, default is 10
-ClientAliveInterval 1800 # every half hour, check if connection is still active; default 0 (infinite).
-                  # Prevents zombie connections/sessions that might be taken over at some point.
 MaxStartups 10    # There can be 10 connections which are currently between "starting the connection"
                   # and "before being authenticated". default: 10:30:100.
-ChannelTimeout *=60m # after 60 minutes of inactivity on any channel, flag connection as unused
-UnusedConnectionTimeout 5m # once flagged as unused, terminate the session after 5 minutes
 
-# Other settings. Disabling X11 can technically increase security (not for authentication, but on the server side).
-# All other settings are not security features.
-# If in doubt, do not set the following options and simply use their default values
-X11Forwarding no # depending on the use case, enabling X11 can be a useful feature
-                 # (in that case, "DisableForwarding" also has to be set to "no")
-DisableForwarding yes # applies to all types of forwarding
-AllowAgentForwarding no # default yes
-AllowTcpForwarding no # default yes
-TCPKeepAlive no # default yes
-AllowStreamLocalForwarding no # default yes
-GatewayPorts no # default no
-PermitTunnel no # default: no
-#PermitOpen # with this, the destinations of TCP forwarding can be restricted
-PrintMotd no # do not print message of the day on login
+# Do not keep unused connections alive
+ClientAliveInterval 1800 # every half hour, check if connection is still active; default 0 (infinite).
+                         # Prevents zombie connections/sessions that might be taken over at some point.
+ClientAliveCountMax 3    # After 10 unanswered client alive messages, the connection is terminated (default=3)
+ChannelTimeout *=60m     # after 60 minutes of inactivity on any channel, flag connection as unused (0=infinite)
+UnusedConnectionTimeout 5m # once flagged as unused, terminate the session after 5 minutes
+TCPKeepAlive no          # default yes
+
+# do not allow any kind of forwarding/tunneling:
+DisableForwarding yes # Disables all forwarding features.
+# Optionally, disable/enable all options manually as follows:
+AllowAgentForwarding no
+AllowStreamLocalForwarding no
+AllowTcpForwarding no
+GatewayPorts no
+PermitListen none
+PermitOpen no
+PermitTunnel no
+X11Forwarding no
+
+# Miscellaneous
+PrintMotd no
+Banner no
+
 # ============= /Hardened settings ===============
 ```
 Replace the placeholder user name with the actual user name:
