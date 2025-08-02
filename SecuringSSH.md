@@ -390,7 +390,7 @@ TODO: order of precedence with sshd_config
 
 
 To revoke access of this specific key later on, simply delete the corresponding line from `/home/myServerUser/.ssh/authorized_keys` on the server and restart the ssh(d) service.
-For an alternative revocation mechanism, see the last part in [Client key signing](#client-key-signing).
+For an alternative revocation mechanism, see the last part in [Client key signing](#client-key-signing). Also, it is discoured to use the `cert-authority` flag in `authorized_keys` (see [Client key signing](#client-key-signing)).
 For more information about the authorized_keys format, see https://manpages.debian.org/unstable/openssh-server/authorized_keys.5.en.html.
 
 ## Additional client convenience settings
