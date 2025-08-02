@@ -25,6 +25,13 @@
 - [Creating a locked-down user, e.g. for tunneling/SFTP](#creating-a-locked-down-user-for-eg-for-tunnelingsftp)
 - [Restricting SFTP](#restricting-sftp)
 - [Tunneling with SSH](#tunneling-with-ssh)
+  - [General aspects](#todo)
+  - [ProxyJump (-J)](#todo)
+  - [LocalForward (-L)](#todo)
+  - [RemoteForward (-R)](#todo)
+  - [DynamicForward (-D)](#todo)
+  - [Tunnel (-W)](#todo)
+- [Other measures](#other-measures)
 
 This section covers different ways of securing SSH server authentication. Everything was tested with Ubuntu 24.04 LTS and a fairly recent version of OpenSSH packaged with Ubuntu (>= 9.2).
 However, most aspects discussed here are operating system agnostic. The focus lies on configuring SSH (including some additional PAM modules).
@@ -1326,6 +1333,8 @@ Note that `DisableForwarding` can always be set to `yes` in the `sshd_config` of
 
 ## Tunneling with SSH
 
+### General aspects
+
 SSH offers different types of tunneling/forwarding:
 * `ProxyJump (-J)`: Connect to an ssh server via one or more proxy jump hosts
 * `ForwardX11 (-X, -x), ForwardTrustedX11 (-Y)`: Forward an X11 connection from the server to the client
@@ -1553,6 +1562,11 @@ in .ssh/config, where does the -X pendant option ForwardX11 need to be set? only
 
 
 =================================
+TODO: section for connection timeouts (e.g. force timeout of stale connections by default, but keep some tunnel connections alive?)
+
+## Other measures
+
+Firewall, see ufw: TODO:section_ufw
+See fail2ban: TODO:section_fail2ban
 
 TODO: add link to fail2ban section somewhere
-TODO: section for connection timeouts (e.g. force timeout of stale connections by default, but keep some tunnel connections alive?)
