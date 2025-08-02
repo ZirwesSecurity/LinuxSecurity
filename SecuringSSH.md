@@ -358,7 +358,7 @@ PerSourcePenaltyExemptList 192.168.0.0/16 # specify sources which are exempt fro
 ## Additing restrictions to public keys
 
 When adding a public key to a user's `authorized_keys`, additional restrictions can be added  as a comma-separated list for use with this specific key. For example:
-```
+```bash
 restrict,port-forwarding,permitopen="192.168.178.46:3002",from="192.168.178.26/32",command="/bin/false" ssh-ed25519 AAAA....
 ```
 The `restrict` keyword disables many ssh features and is equivalent to specifying the following options
@@ -368,13 +368,13 @@ The `restrict` keyword disables many ssh features and is equivalent to specifyin
 * `no-X11-forwarding`: do not allow X11 forwarding
 * `no-user-rc`: do not allow loading the user's `.rc` file
 The `restrict` keyword can be used together with manually allowing some features, e.g.
-```
+```bash
 restrict,port-forwarding,pty ssh-ed25519 AAAA....
 ```
 This disables all features listed above, but allows port forwarding and interactive shells.
 
 The `from` keyword allows use of the public key only from specified hostnames, e.g.
-```
+```bash
 restrict,from="127.0.0.1,192.168.178.26/24,example.com" ssh-ed25519 AAAA....
 ```
 This allows using the public key from the IP 127.0.0.1. the local subnet 192.168.178.* and the hostname example.com.
@@ -1149,6 +1149,27 @@ reboot
 ```
 
 ## Creating a locked-down user, e.g. for tunneling/SFTP
+
+It can be useful to have a locked-down user for use with special-purpose SSH usage, e.g. for forwarding connections on a proxy server (see TODO:section_tunneling) or restricting use of SFTP (see TODO:section_sftp). The following steps create a user without interactive shell that cannot be logged into (run everything as root, see the convenience script at the end of the section:
+```bash
+# decide on a name for the new user, e.g. a randomly generated name
+mynewuser=$(LC_ALL=C tr -dc 'a-z' </dev/urandom | head -c 15)
+# create a group for the user where the new user is the only member
+mynewgroup="${mynewuser}_g"
+groupadd $mynewgroup
+useradd -r -M -N -s /bin/false -g $mynewgroup $mynewuser
+```
+The `useradd` command creates the new user with the following options:
+* `-r`: create a system user (has a locked password)
+* `-M`: do not create a home directory for the new user
+* `-s`: set the shell of the user to `/bin/false`, removing interactive shell access (location of `/bin/false` might vary on other operating systems). Alternatively, the shell could be set to `/usr/sbin/nologin`.
+* `-N`: do not create a group with the name of the user
+* `-g`: add the new user to the new group
+
+Of course, this new user should be unpriviliged (e.g., do not add to the sudoers). To double-check that this worked, look for a `!` in the second entry of `/etc/shadow` (locked password) and the correct shell in the last entry of `/etc/passwd`. If the password is not locked, it can be manually locked by running
+```bash
+passwd --lock $mynewuser
+```
 
 ## Restricting SFTP
 
