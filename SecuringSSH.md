@@ -1281,6 +1281,9 @@ Match User $mynewuser Address 192.168.*.* # the Address part is optional
 EOF
 ```
 
+TODO: mention signed keys for additional restrictions?
+TODO: more info about precedence of authorized_keys and sshd_config options?
+
 ## Restricting SFTP
 
 In order to create an isolated SFTP connection, create a new user as described in [Creating a locked-down user, e.g. for tunneling/SFTP](#todo). Based on this configuration, the following changes in `sshd_config` need to be made:
@@ -1341,6 +1344,7 @@ For the remainder of this section, the following convention will be used:
 There are some useful general options when establishing tunnels. 
 -f
 -N
+TODO: client-side equivalents
 
 Also note that the ssh agend should never be forwarded. With the introduction of proxy jumps, this is no longer necessary.
 
@@ -1366,3 +1370,189 @@ TODO: the proxyJump sshd does not need the any settings of the final server (e.g
 ssh -L 25:abc:25 def
 
 Instead of ssh-agent forwarding (`ssh-agent -A`), which allows root on the jump server to use keys in the agent, use `ProxyJump`.
+
+### ProxyJump (-J)
+
+Assume the client (`C`) needs to connect to a destination server (`D`), but that server cannot be reached from `C` directly (maybe because the firewall of `D` blocks connection attempts). However, there is another machine `P1` that can connect to `D` (maybe because it is on the same local network) and can also be reached from `C`. In this case, `P1` can be used as proxy jump:
+```
+C (no sshd) -> P1 (sshd) -> D (sshd)
+```
+with the following IPs:
+```
+C: 1.1.1.1, user "c"
+P1: 2.2.2.2, user "p1"
+D. 10.10.10.10, user "d"
+```
+On machine `P1`, create a locked-down user as described in TODO:locked_down_user. In this configuration, forwarding any connection is disabled. To allow `P1` to serve as proxy jump, make the following changes. In `sshd_config`, set
+```bash
+Match User $mynewuser Address 1.1.1.1 # <---------- Only allow connections from machine C
+    AuthenticationMethods publickey
+    ChrootDirectory /etc/jail/$mynewuser
+    ForceCommand /bin/false
+    PermitTTY no
+    AuthorizedKeysFile /etc/%u_authorized_keys
+    PermitUserRC no
+
+    DisableForwarding no # <-------------------------------------
+
+    AllowAgentForwarding no
+    AllowStreamLocalForwarding no
+    AllowTcpForwarding local # <-------------------------------------
+    GatewayPorts no
+    PermitListen none
+    PermitOpen 10.10.10.10:22 # <-------------------------------------
+    PermitTunnel no
+    X11Forwarding no
+
+    # TODO: think about persistent tunnel
+    # Optional: kill unused connection after some time
+    ClientAliveInterval 30 # every 30s, check if connection is active
+    ClientAliveCountMax 300 # terminate connection after 300 failed client alive messages
+    ChannelTimeout *=60m # after 60 minutes of inactivity on any channel, flag connection as unused
+    UnusedConnectionTimeout 5m # once flagged as unused, terminate the session after 5 minutes
+
+    # miscellaneous
+    Banner no
+```
+`DisableForwarding` has to be set to `no`. Since this allows all forwarding, we manually disable all forwarding options except:
+* `AllowTcpForwarding`: Set to `local` which is the minimum required for proxying the connection
+* `PermitOpen`: optionally, further restrict that proxy connections can only be made to server `D` with IP 10.10.10.10, which listens on port 22
+
+In `authorized_keys`, the most restrictive set of options allowing to serve as proxy jump is
+```bash
+restrict,from="1.1.1.1",command="/bin/false",port-forwarding,permitopen="10.10.10.10:22 ssh-ed25519 AAAAC3..."
+```
+In contrast to setting `AllowTcpForwarding local` in `sshd_config` (and/or `PermitListen none`), `port-forwarding` in `authorized_keys` permits both local and remote tunnels. Setting `AllowTcpForwarding local` in `sshd_config` takes precedence, i.e. even though `port-forwarding` is set in `authorized_keys`, only local forwarding is allowed. Alternatively, remote forwarding could be disabled by adding a bogus IP for `permitlisten`, e.g.
+```bash
+restrict,from="1.1.1.1",command="/bin/false",port-forwarding,permitopen="10.10.10.10:22,permitlisten="127.0.0.2:1111" ssh-ed25519 AAAAC3..."
+```
+In this way, connections to `D` from `C` can be established via
+```bash
+ssh -J p1@2.2.2.2 d@10.10.10.10
+```
+or with setting this up in `C`'s `./ssh/config`
+```bash
+ForwardAgent no
+IdentitiesOnly yes
+Host D
+    Hostname 10.10.10.10
+    User d
+    IdentityFile ~/.ssh/key_for_d
+    ProxyJump P1
+Host P1
+    Hostname 2.2.2.2
+    User p1
+    IdentityFile ~/.ssh/key_for_p1
+```
+In this way, a connection from `C` to `D` can be done with
+```bash
+ssh D
+```
+
+A second example involves two proxy jumps to a server used only for sftp:
+* `C`: 192.168.178.26, no sshd
+* `P1`: p1@192.168.178.45, sshd listens on port 3001, no subsystem enabled
+* `P2`: p2@192.168.178.46, sshd listens on port 3002, no subsystem enabled
+* `D`: d@192.168.178.47, sshd listens on port 4001, sftp-internal enabled
+`C` first connects to `P1`, from there to `P2` and finally from there to `D`. Some key points to consider:
+* `P1` and `P2` do not have to have the sftp subsystem enabled. All they see is an encrypted connection that they forward.
+* `D` does not have to have any forwarding options enabled. It is simply the sftp server and does not care if the connection is made directly or through jump hosts.
+* The private/public key pairs for `P1`, `P2` and `D` are generated on `C`. The private keys never leave `C`. It is not necessary to forward the ssh agent of `C`. At no point do private keys (or the passwords used to encrypt the private keys) leave `C`. This is why using `ProxyJump` is now the preferred way of doing these types of connections.
+
+The full configuration of `sshd_config` and `authorized_keys` on the machines are given below (the users on `P1` and `P2` were generated following exactly TODO:section_locked_down user and the user on `D` following TODO:section_sftp, i.e. none of the users involved have an interactive shell:
+```bash
+authorized_keys:
+P1: restrict,from="192.168.178.26/32",command="/bin/false",port-forwarding,permitopen="192.168.178.46:3002" ssh-ed25519 AAAA
+P2: restrict,from="192.168.178.45/32",command="/bin/false",port-forwarding,permitopen="192.168.178.47:4001" ssh-ed25519 AAAA...
+D:  restrict,from="192.168.178.46/32",command="/bin/false" ssh-ed25519 AAAA...
+```
+```bash
+sshd_config of P1:
+Port 3001
+#Subsystem sftp internal-sftp (not enabled)
+Match User p1 Address 192.168.178.26 # only allow connections from C
+    AuthenticationMethods publickey
+    ChrootDirectory /etc/jail/%u
+    ForceCommand /bin/false
+    PermitTTY no
+    AuthorizedKeysFile /etc/%u_authorized_keys
+    DisableForwarding no
+    AllowAgentForwarding no
+    AllowStreamLocalForwarding no
+    AllowTcpForwarding local
+    GatewayPorts no
+    PermitListen none
+    PermitOpen 192.168.178.46:3002 # only allow forwarding to P2
+    PermitTunnel no
+    X11Forwarding no
+    PermitUserRC no
+
+sshd_config of P2:
+Port 3002
+#Subsystem sftp internal-sftp (not enabled)
+Match User p2 Address 192.168.178.45 # only allow connections from P1
+    AuthenticationMethods publickey
+    ChrootDirectory /etc/jail/%u
+    ForceCommand /bin/false
+    PermitTTY no
+    AuthorizedKeysFile /etc/%u_authorized_keys
+    DisableForwarding no
+    AllowAgentForwarding no
+    AllowStreamLocalForwarding no
+    AllowTcpForwarding local
+    GatewayPorts no
+    PermitListen none
+    PermitOpen 192.168.178.47:4001 # only allow forwarding to D
+    PermitTunnel no
+    X11Forwarding no
+    PermitUserRC no
+
+sshd_config of s1:
+Port 4001
+Subsystem  sftp internal-sftp
+Match User s1 Address 192.168.178.46 # only allow connections from P2
+    AuthenticationMethods publickey
+    ChrootDirectory /etc/jail/upload
+    ForceCommand internal-sftp -R
+    PermitTTY no
+    AuthorizedKeysFile /etc/%u_authorized_keys
+    DisableForwarding yes # disable all types of forwarding
+    PermitUserRC no
+```
+On `C`, add the following entries to `.ssh/config`:
+```bash
+ForwardAgent no
+IdentitiesOnly yes
+Host D
+    Hostname 192.168.178.47
+    User d
+    Port 4001
+    IdentityFile ~/.ssh/key_for_d # located only on C
+Host P2
+    Hostname 192.168.178.46
+    User p2
+    Port 3002
+    IdentityFile ~/.ssh/key_for_p2 # located only on C
+    ProxyJump p1
+Host P1
+    Hostname 192.168.178.45
+    User p1
+    Port 3001
+    IdentityFile ~/.ssh/key_for_p1 # located only on C
+```
+The sftp connection can be established from `C` through `P1` and `P2` to `D` with
+```bash
+sftp D
+```
+
+### `ForwardX11 (-X, -x), ForwardTrustedX11 (-Y)
+
+TODO:
+on the jump hosts, does X forwarding need to be enabled? probably no
+in .ssh/config, where does the -X pendant option ForwardX11 need to be set? only destination??
+
+
+=================================
+
+TODO: add link to fail2ban section somewhere
+TODO: section for connection timeouts (e.g. force timeout of stale connections by default, but keep some tunnel connections alive?)
