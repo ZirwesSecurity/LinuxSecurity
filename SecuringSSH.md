@@ -1287,12 +1287,13 @@ Subsystem  sftp internal-sftp # enable SFTP globally
 
 # match the dedicated SFTP user, optionally restricted to a certain IP (range) or hostname(s)
 Match User myNewUser Address 192.168.178.46 
-    AuthenticationMethods publickey
     ChrootDirectory /var/www/example.com/ -d shared_files -u 022
-    ForceCommand internal-sftp
-    PermitTTY no
-    AuthorizedKeysFile /etc/%u_authorized_keys
+    ForceCommand internal-sftp # force this connection to be an SFTP session
+    # same as settings as described in the previous section
+    AuthenticationMethods publickey
     DisableForwarding yes # disable all forms of forwarding/tunneling
+    AuthorizedKeysFile /etc/%u_authorized_keys
+    PermitTTY no
     PermitUserRC no
     # Optional: kill unused connection after some time
     ClientAliveInterval 30 # every 30s, check if connection is active
@@ -1309,7 +1310,13 @@ sudo mkdir -p /etc/jail/upload
 sudo chown mynewuser:mynewgroup /etc/jail/upload
 sudo chmod 777 /etc/jail/upload
 ```
-Note that it is required that all directories up to `/var/www/example.com/` are owned by root and do not have write permissions for the new user. The entry `ChrootDirectory /var/www/example.com/ -d shared_files -u 022` means that the SFTP session is chrooted to `/var/www/example.com/` and the start of the session (`-d`) is in `/var/www/example.com/shared_files`, where the new user has write permissions. `-u 022` means that files uploaded from the SFTP session have a umask of 022 (if permitted).
+Note that it is required that all directories up to and including `/var/www/example.com/` are owned by root and do not have write permissions for the new user. The entry `ChrootDirectory /var/www/example.com/ -d shared_files -u 022` means that the SFTP session is chrooted to `/var/www/example.com/` and the start of the session (`-d`) is in `/var/www/example.com/shared_files`, where the new user has write permissions. `-u 022` means that files uploaded from the SFTP session have a umask of 022 (if the destinationpermits this and if the source file at least has these permissions). The second important setting is `ForceCommand internal-sftp`, which forces the connection to be an SFTP connection, i.e. it prevents an interactive shell. In this way, `ssh user@server` is rejected and only `sftp user@server` connections can be established.
+
+The SFTP session can further be restricted, e.g. by allowing only read acceess. First, make sure there are no write permissions for the sftp uer in the chrooted directory, as described in [Creating a locked-down user, e.g. for tunneling/SFTP](#todo). Then in `sshd_config`, modify the `ForceCommand` entry to
+```bash
+ForceCommand internal-sftp -R 
+```
+and add `-d` and/or `-u` as needed. The option `-R` means read-only access. Access can further be controlled by using `-p` to whitelist requests and `-P` to blacklist requests (e.g. `-p realpath,open,write,close,lstat`). Note that the "requests" are not sftp commands. Supported requests can be found by running `/usr/lib/openssh/sftp-server -Q requests`. Restrictions in `authorized_keys` can be the same as in [Creating a locked-down user, e.g. for tunneling/SFTP](#todo). The `ForceCommand` setting in `sshd_config` takes precedenc over the `command` option in `authorized_keys`.
 
 ## Tunneling with SSH
 
