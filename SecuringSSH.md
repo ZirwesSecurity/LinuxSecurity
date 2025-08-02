@@ -1148,7 +1148,7 @@ to see if the change was successful. Reboot the server
 reboot
 ```
 
-## Creating a locked-down user for, e.g. for tunneling/SFTP
+## Creating a locked-down user, e.g. for tunneling/SFTP
 
 ## Restricting SFTP
 
