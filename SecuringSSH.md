@@ -1463,7 +1463,9 @@ A second example involves two proxy jumps to a server used only for sftp:
 * `P1`: p1@192.168.178.45, sshd listens on port 3001, no subsystem enabled
 * `P2`: p2@192.168.178.46, sshd listens on port 3002, no subsystem enabled
 * `D`: d@192.168.178.47, sshd listens on port 4001, sftp-internal enabled
+
 `C` first connects to `P1`, from there to `P2` and finally from there to `D`. Some key points to consider:
+
 * `P1` and `P2` do not have to have the sftp subsystem enabled. All they see is an encrypted connection that they forward.
 * `D` does not have to have any forwarding options enabled. It is simply the sftp server and does not care if the connection is made directly or through jump hosts.
 * The private/public key pairs for `P1`, `P2` and `D` are generated on `C`. The private keys never leave `C`. It is not necessary to forward the ssh agent of `C`. At no point do private keys (or the passwords used to encrypt the private keys) leave `C`. This is why using `ProxyJump` is now the preferred way of doing these types of connections.
