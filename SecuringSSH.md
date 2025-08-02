@@ -247,9 +247,9 @@ MaxStartups 10    # There can be 10 connections which are currently between "sta
                   # and "before being authenticated". default: 10:30:100.
 
 # Do not keep unused connections alive
-ClientAliveInterval 1800 # every half hour, check if connection is still active; default 0 (infinite).
+ClientAliveInterval 30  # every 30s,  check if connection is still alive; default 0 (infinite).
                          # Prevents zombie connections/sessions that might be taken over at some point.
-ClientAliveCountMax 3    # After 10 unanswered client alive messages, the connection is terminated (default=3)
+ClientAliveCountMax 300  # After 300 unanswered client alive messages, the connection is terminated (default=3)
 ChannelTimeout *=60m     # after 60 minutes of inactivity on any channel, flag connection as unused (0=infinite)
 UnusedConnectionTimeout 5m # once flagged as unused, terminate the session after 5 minutes
 TCPKeepAlive no          # default yes
