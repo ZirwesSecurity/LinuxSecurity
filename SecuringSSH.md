@@ -369,7 +369,7 @@ When adding a public key to a user's `authorized_keys`, additional restrictions 
 restrict,port-forwarding,permitopen="192.168.178.46:3002",from="192.168.178.26/32",command="/bin/false" ssh-ed25519 AAAA....
 ```
 The `restrict` keyword disables many ssh features and is equivalent to specifying the following options
-* `no-agend-forwarding`: do not forward ssh agents
+* `no-agent-forwarding`: do not forward ssh agents
 * `no-port-forwarding`: do not allow any port forwarding
 * `no-pty`: do not allow an interactive shell
 * `no-X11-forwarding`: do not allow X11 forwarding
@@ -891,7 +891,7 @@ when using the keyagent with hardware token keys. So if in doubt, set `AddKeysTo
 all **resident keys** can be added with
 ```bash
 eval "$(ssh-agent -s)" # start the agent, omit if already running
-ssh-add -K # add resident keys on the yubikey to the agend
+ssh-add -K # add resident keys on the yubikey to the agent
 ssh-add -l # show the keys currently in the agent
 ```
 
@@ -1355,7 +1355,7 @@ There are some useful general options when establishing tunnels.
 -N
 TODO: client-side equivalents
 
-Also note that the ssh agend should never be forwarded. With the introduction of proxy jumps, this is no longer necessary.
+Also note that the ssh agent should never be forwarded. With the introduction of proxy jumps, this is no longer necessary.
 
 Relevant options in sshd_config:
     DisableForwarding yes # Disables all forwarding features.
@@ -1560,9 +1560,41 @@ sftp D
 
 ### `ForwardX11 (-X, -x), ForwardTrustedX11 (-Y)
 
-TODO:
-on the jump hosts, does X forwarding need to be enabled? probably no
-in .ssh/config, where does the -X pendant option ForwardX11 need to be set? only destination??
+```
+C (no sshd server) --> [ optional proxy jump(s) ] --> D (sshd) 
+```
+
+Destination server `D`'s sshd_config:
+```bash
+X11Forwarding yes     # <------------------
+DisableForwarding yes # <------------------ can be left as "yes"
+AllowAgentForwarding no
+AllowTcpForwarding no
+AllowStreamLocalForwarding no
+GatewayPorts no
+PermitTunnel no
+PermitListen none
+PermitOpen none
+```
+
+`authorized_keys` on destination server:
+```bash
+restrict,from="192.168.178.0/24",pty,X11-forwarding ssh-ed25519 AAAAC3...
+```
+
+CLI on client `C`: -X or -Y; there is also -x (disable X forwarding, i.e. "ForwardX11 no"). Or in .ssh/config:
+```bash
+    ForwardX11 yes # equivalent to -X
+    ForwardX11Trusted yes # equivalent to -Y
+    # Additonal option client-side:
+    ForwardX11Timeout 20m (default 20m for untrusted X11 connections)
+```
+Note that -Y is equivalent to setting BOTH `ForwardX11 yes` and `ForwardX11Trusted yes`.
+
+Note for proxy jump host(s) in-between `C` and `D`:
+ - do not need to have an X server running (headless server)
+ - do not need to allow X11Forward in sshd_config (only sees encrypted connection)
+ - in ssh/config, "ForwardX11 yes" only has to be set for the destination (not any intermediary proxy jump hosts)
 
 
 =================================
