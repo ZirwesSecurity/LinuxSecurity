@@ -22,7 +22,7 @@
   - [Host key signing](#host-key-signing)
 - [Restricting access by time of day](#restricting-access-by-time-of-day)
 - [Monitor logins](#monitor-logins)
-- [Creating a locked-down user, e.g. for tunneling/SFTP](#creating-a-locked-down-user-for-eg-for-tunnelingsftp)
+- [Creating a locked-down user, e.g. for tunneling/SFTP](#creating-a-locked-down-user-eg-for-tunnelingsftpp)
 - [Restricting SFTP](#restricting-sftp)
 - [Tunneling with SSH](#tunneling-with-ssh)
   - [General aspects](#todo)
@@ -1159,7 +1159,7 @@ reboot
 
 ## Creating a locked-down user, e.g. for tunneling/SFTP
 
-It can be useful to have a locked-down user for use with special-purpose SSH usage, e.g. for forwarding connections on a proxy server (see TODO:section_tunneling) or restricting use of SFTP (see TODO:section_sftp). The following steps create a user without interactive shell that cannot be logged into and that disables all SSH functionality. Note that this only serves as the baseline configuration for the examples given later in TODO:SFTP and TODO:tunnel_user. Run all commands in this section as root
+It can be useful to have a locked-down user for use with special-purpose SSH usage, e.g. for forwarding connections on a proxy server (see [Tunneling with SSH](#tunneling-with-ssh)) or restricting use of SFTP (see [Restricting SFTP](#restricting-sftp)). The following steps create a user without interactive shell that cannot be logged into and that disables all SSH functionality. Note that this only serves as the baseline configuration for the examples given later in [Restricting SFTP](#restricting-sftp) and [Tunneling with SSH](#tunneling-with-ssh). Run all commands in this section as root
 ```bash
 # decide on a name for the new user, e.g. a randomly generated name
 mynewuser=$(LC_ALL=C tr -dc 'a-z' </dev/urandom | head -c 15)
@@ -1186,7 +1186,7 @@ mkdir /etc/jail/$mynewuser
 chown -R :$mynewgroup /etc/jail/$mynewuser
 chmod -R g+r /etc/jail/$mynewuser
 ```
-The new directory has no write permissions for the new user. For ssh's chroot to work, all directories up to the last one must be owned by root and not writable for the user (for other examples, see TODO:section_sftp and TODO:section_tunneling).
+The new directory has no write permissions for the new user. For ssh's chroot to work, all directories up to the last one must be owned by root and not writable for the user (for other examples, see [Restricting SFTP](#restricting-sftp) and [Tunneling with SSH](#tunneling-with-ssh)).
 
 To restrict authentication for this special-purpose user, require login via (at least) public key authentication. The `authorized_keys` file should not be modifyable by the user, so create it with
 ```bash
@@ -1206,7 +1206,7 @@ In `/etc/ssh/sshd_config`, configure a Match block for the new user that applies
 * `ForceCommand`:  Forces execution of a given command and prevent exectution of all other commands
 * `PermitTTY`: Do not permit interactive shell access
 * `AuthorizedKeysFile`: location of the authorized_keys file not modifyable by the user
-* `DisableForwarding`: disable all types of forwarding/tunneling (see TODO:tunneling for more information)
+* `DisableForwarding`: disable all types of forwarding/tunneling (see [Tunneling with SSH](#tunneling-with-ssh) for more information)
 * `PermitUserRC`: do not allow loading the user's `ssh/rc` file
 * Set up connection timeouts for idle connections (see also TODO:connection_timeouts)
 
@@ -1329,7 +1329,7 @@ ForceCommand internal-sftp -R
 ```
 and add `-d` and/or `-u` as needed. The option `-R` means read-only access. Access can further be controlled by using `-p` to whitelist requests and `-P` to blacklist requests (e.g. `-p realpath,open,write,close,lstat`). Note that the "requests" are not sftp commands. Supported requests can be found by running `/usr/lib/openssh/sftp-server -Q requests`. Restrictions in `authorized_keys` can be the same as in [Creating a locked-down user, e.g. for tunneling/SFTP](#todo). The `ForceCommand` setting in `sshd_config` takes precedence over the `command` option in `authorized_keys`.
 
-Note that `DisableForwarding` can always be set to `yes` in the `sshd_config` of the sshd server where the sftp connection is made to and `restrict` can be set in `authorized_keys`, even when intermediate proxy jumps may be configured. The forwarding options are only relevant for the proxy hosts themselves, not for the desitation (see TODO:tunnel_section for more details).
+Note that `DisableForwarding` can always be set to `yes` in the `sshd_config` of the sshd server where the sftp connection is made to and `restrict` can be set in `authorized_keys`, even when intermediate proxy jumps may be configured. The forwarding options are only relevant for the proxy hosts themselves, not for the desitation (see [Tunneling with SSH](#tunneling-with-ssh) for more details).
 
 ## Tunneling with SSH
 
@@ -1392,7 +1392,7 @@ C: 1.1.1.1, user "c"
 P1: 2.2.2.2, user "p1"
 D. 10.10.10.10, user "d"
 ```
-On machine `P1`, create a locked-down user as described in TODO:locked_down_user. In this configuration, forwarding any connection is disabled. To allow `P1` to serve as proxy jump, make the following changes. In `sshd_config`, set
+On machine `P1`, create a locked-down user as described in [Creating a locked-down user, e.g. for tunneling/SFTP](#creating-a-locked-down-user-eg-for-tunnelingsftpp). In this configuration, forwarding any connection is disabled. To allow `P1` to serve as proxy jump, make the following changes. In `sshd_config`, set
 ```bash
 Match User $mynewuser Address 1.1.1.1 # <---------- Only allow connections from machine C
     AuthenticationMethods publickey
@@ -1470,7 +1470,8 @@ A second example involves two proxy jumps to a server used only for sftp:
 * `D` does not have to have any forwarding options enabled. It is simply the sftp server and does not care if the connection is made directly or through jump hosts.
 * The private/public key pairs for `P1`, `P2` and `D` are generated on `C`. The private keys never leave `C`. It is not necessary to forward the ssh agent of `C`. At no point do private keys (or the passwords used to encrypt the private keys) leave `C`. This is why using `ProxyJump` is now the preferred way of doing these types of connections.
 
-The full configuration of `sshd_config` and `authorized_keys` on the machines are given below (the users on `P1` and `P2` were generated following exactly TODO:section_locked_down user and the user on `D` following TODO:section_sftp, i.e. none of the users involved have an interactive shell:
+The full configuration of `sshd_config` and `authorized_keys` on the machines are given below (the users on `P1` and `P2` were generated following exactly the script from [Creating a locked-down user, e.g. for tunneling/SFTP](#creating-a-locked-down-user-eg-for-tunnelingsftpp)
+ and the user on `D` following [Restricting SFTP](#restricting-sftp), i.e. none of the users involved have an interactive shell:
 ```bash
 authorized_keys:
 P1: restrict,from="192.168.178.26/32",command="/bin/false",port-forwarding,permitopen="192.168.178.46:3002" ssh-ed25519 AAAA
