@@ -1447,7 +1447,7 @@ Host D
     Hostname 10.10.10.10
     User d
     IdentityFile ~/.ssh/key_for_d
-    ProxyJump P1
+    ProxyJump P1 # same as -J
 Host P1
     Hostname 2.2.2.2
     User p1
@@ -1540,12 +1540,13 @@ Host D
     User d
     Port 4001
     IdentityFile ~/.ssh/key_for_d # located only on C
+    ProxyJump P2 # same as -J
 Host P2
     Hostname 192.168.178.46
     User p2
     Port 3002
     IdentityFile ~/.ssh/key_for_p2 # located only on C
-    ProxyJump p1
+    ProxyJump P1 # same as -J
 Host P1
     Hostname 192.168.178.45
     User p1
