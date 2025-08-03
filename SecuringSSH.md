@@ -1564,7 +1564,7 @@ sftp D
 C (no sshd server) --> [ optional proxy jump(s) ] --> D (sshd) 
 ```
 
-Destination server `D`'s sshd_config:
+Destination server `D`'s minimal sshd_config:
 ```bash
 X11Forwarding yes     # <------------------
 DisableForwarding yes # <------------------ can be left as "yes"
@@ -1577,7 +1577,7 @@ PermitListen none
 PermitOpen none
 ```
 
-`authorized_keys` on destination server:
+Minimal `authorized_keys` on destination server (if no interactive shell is required, `pty` can be omitted:
 ```bash
 restrict,from="192.168.178.0/24",pty,X11-forwarding ssh-ed25519 AAAAC3...
 ```
