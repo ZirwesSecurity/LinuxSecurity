@@ -1353,11 +1353,12 @@ For the remainder of this section, the following convention will be used:
 There are some useful general options when establishing tunnels. 
 -f
 -N
-TODO: client-side equivalents
+TODO: client-side .ssh/config equivalents
 
 Also note that the ssh agent should never be forwarded. With the introduction of proxy jumps, this is no longer necessary.
 
 Relevant options in sshd_config:
+```bash
     DisableForwarding yes # Disables all forwarding features.
     # Optionally, disable/enable all options manually as follows:
     AllowAgentForwarding no
@@ -1368,17 +1369,19 @@ Relevant options in sshd_config:
     PermitOpen none
     PermitTunnel no
     X11Forwarding no
-
-TODO: client-side settings
-
--J: DisableForwarding yes can be set on the final server if that server is not doing any forwarding, does not affect jump hosts connecting to that server
+```
 
 
-TODO: the proxyJump sshd does not need the any settings of the final server (e.g. sftp, remote forwarding), and the final server does not need to allow any forwarding options
+Instead of ssh-agent forwarding (`ssh-agent -A`), which allows root on the jump server to use keys in the agent, use `ProxyJump`.
+
+
+
+TODO: always check that the proxyJump hosts do not need any features enabled that is used on the final server (e.g. sftp, remote forwarding), and the final server does not need to allow any forwarding options
+
+TODO: always add both command line flags and .ssh/config settings
 
 ssh -L 25:abc:25 def
 
-Instead of ssh-agent forwarding (`ssh-agent -A`), which allows root on the jump server to use keys in the agent, use `ProxyJump`.
 
 ### ProxyJump (-J)
 
@@ -1528,7 +1531,7 @@ Match User s1 Address 192.168.178.46 # only allow connections from P2
     ForceCommand internal-sftp -R
     PermitTTY no
     AuthorizedKeysFile /etc/%u_authorized_keys
-    DisableForwarding yes # disable all types of forwarding
+    DisableForwarding yes # disable all types of forwarding, can be set to yes because s1 does not do any forwarding (it is the target)
     PermitUserRC no
 ```
 On `C`, add the following entries to `.ssh/config`:
@@ -1558,7 +1561,7 @@ The sftp connection can be established from `C` through `P1` and `P2` to `D` wit
 sftp D
 ```
 
-### `ForwardX11 (-X, -x), ForwardTrustedX11 (-Y)
+### ForwardX11 (-X, -x), ForwardTrustedX11 (-Y)
 
 ```
 C (no sshd server) --> [ optional proxy jump(s) ] --> D (sshd) 
@@ -1566,8 +1569,8 @@ C (no sshd server) --> [ optional proxy jump(s) ] --> D (sshd)
 
 Destination server `D`'s minimal sshd_config:
 ```bash
-X11Forwarding yes     # <------------------
-DisableForwarding yes # <------------------ can be left as "yes"
+X11Forwarding yes     # <---------
+DisableForwarding yes # <--------- can be left as "yes" because D does not do any forwarding on its own
 AllowAgentForwarding no
 AllowTcpForwarding no
 AllowStreamLocalForwarding no
@@ -1592,13 +1595,17 @@ CLI on client `C`: -X or -Y; there is also -x (disable X forwarding, i.e. "Forwa
 Note that -Y is equivalent to setting BOTH `ForwardX11 yes` and `ForwardX11Trusted yes`.
 
 Note for proxy jump host(s) in-between `C` and `D`:
- - do not need to have an X server running (headless server)
- - do not need to allow X11Forward in sshd_config (only sees encrypted connection)
+ - they do not need to have an X server running (headless server)
+ - they do not need to allow X11Forward in sshd_config (only sees encrypted connection)
  - in ssh/config, "ForwardX11 yes" only has to be set for the destination (not any intermediary proxy jump hosts)
 
 
 =================================
 TODO: section for connection timeouts (e.g. force timeout of stale connections by default, but keep some tunnel connections alive?)
+ClientAliveInterval 30
+ClientAliveCountMax 30
+ChannelTimeout *=60m
+TCPKeepAlive no
 
 ## Other measures
 
