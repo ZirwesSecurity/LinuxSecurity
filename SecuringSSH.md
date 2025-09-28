@@ -1299,8 +1299,8 @@ Subsystem  sftp internal-sftp # enable SFTP globally
 
 # match the dedicated SFTP user, optionally restricted to a certain IP (range) or hostname(s)
 Match User myNewUser Address 192.168.178.46 
-    ChrootDirectory /var/www/example.com/ -d shared_files -u 022
-    ForceCommand internal-sftp # force this connection to be an SFTP session
+    ChrootDirectory /var/www/example.com/ 
+    ForceCommand internal-sftp -d shared_files -u 022 # force this connection to be an SFTP session
     # same as the settings as described in the previous section
     AuthenticationMethods publickey
     DisableForwarding yes # disable all forms of forwarding/tunneling
