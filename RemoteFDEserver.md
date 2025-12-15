@@ -166,14 +166,13 @@ Check if a TPM 2.0 module is available:
 ```
 sudo tpm2_getcap properties-fixed
 ```
-Store the key temporarily in an environment variable (TODO: better work with a new keyfile in a new slot?)
-```bash
-read -rs -p "Enter disk key: " diskkey; echo ""
+More information can be seen with
 ```
-Bind the LUKS key to the TPM chip:
+sudo tpm2_eventlog --eventlog-version=2 /sys/kernel/security/tpm0/binary_bios_measurements
+```
+Bind the LUKS key to the TPM chip (this will generate a new random key with the same number of bits as the master key and seal it using the TPM:
 ```bash
-sudo clevis luks bind -d /dev/sda3 tpm2 '{"hash":"sha256","key":"ecc","pcr_bank":"sha256","pcr_ids":"1,7"}' <<< "$diskkey"
-unset diskkey
+sudo clevis luks bind -d /dev/sda3 tpm2 '{"hash":"sha256","key":"ecc","pcr_bank":"sha256","pcr_ids":"1,7"}'
 ```
 where `sda3` is the name displayed by `lsblk` as the parent of the TYPE `crypt` disk. One could add more PCR IDs to make releasing the key more restrictive (1 is for hardware change and 7 for secure boot), but it may break on updates (e.g. 0 changes on firmware update, 4 changes on boot loader update but protects against boot loader downgrade, adding 9 will protect if initramfs is rebuilt, 14 for shim). See also https://man.archlinux.org/man/systemd-cryptenroll.1#TPM2_PCRs_and_policies). (TODO: which pcr_ids to choose ideally? `"pcr_ids":"1,4,7,9,14"`?) In theory, this can be used without specifying any `pcr_ids` (e.g. without secure boot), but then, the encryption is pointless. Instead of `"key":"ecc"` could also set `"key":"rsa"`.
 
@@ -205,3 +204,5 @@ Tokens:
 ## TODO
 
 The next Ubuntu release will switch from initramfs-tools to dracut. How does this affect the three methods?
+
+TODO: test yubikey - # clevis luks bind -d /dev/sdX yubikey '{"slot":1}'
