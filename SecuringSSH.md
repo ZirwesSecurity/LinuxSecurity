@@ -174,8 +174,12 @@ AllowUsers myServerUser@192.168.*.* # IMPORTANT: this restricts login to the loc
                                     # This is a space-separated list, i.e. AllowUsers user1 user2@ip user3
 AllowGroups mysshgroup # to login to a user, the user must be part of this group (space-separated list)
 # Order of checking is DenyUsers, AllowUsers, DenyGroups, finally AllowGroups
-# There is also the option 'ListenAddress' to restrict listening to specific IPs and ports.
-# This makes sense if the server can be reached through multiple IPs/has multiple network devices/subnets.
+# There is also the option 'ListenAddress' to restrict listening on specific IPs and ports.
+# This makes sense if the server can be reached through multiple IPs/has multiple network devices/subnets to restrict
+# access to e.g. the internal network. Multiple IPs can be specified on multiple lines. If a port is specified,
+# e.g. ListenAddress 1.1.1.1:1234, that port overwrites the 'Port' option below. Hostnames can be specified, but not
+# IP ranges.
+# Similarly, 'AddressFamily' can restrict connections to ipv4 ('inet'), ipv6 (inet6) or both (any, default)
 
 # Disable all authentication methods except public key authentication. When using a "Match" block (see below),
 # then "PubkeyAuthentication" could be set to "no" and "AuthenticationMethods" to "none". In this way, logging in
@@ -1108,6 +1112,10 @@ The third parameter can be used to specify the user this applies to.
 
 ## Monitor logins
 
+Activity can be read from the logfile with
+```
+sudo journalctl -u ssh
+```
 In order to get notifications on successful server logins, a simple system monitor can be employed. This has several advanatages over other approaches commonly recommended:
 - Using `pam_exec`: This only works if ssh is configured to use PAM. Also, it is probably a good idea not to touch the PAM config files.
 - Adding a hook to `bashrc` or `sshrc`: this could be circumvented.
