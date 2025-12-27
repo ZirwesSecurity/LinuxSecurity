@@ -174,7 +174,7 @@ sudo ufw allow out to any port 22 proto tcp # same as "ufw allow out 22/tcp" sho
 
 ## Routing
 
-ufw can also be used to add routing rules. Adding rules has a slightly different syntax:
+ufw can also be used to add routing rules. Adding routing rules has a slightly different syntax (only long-form notation:
 ```
 ufw route (--dry-run) (log|log-all) (delete|insert [NUM]|prepend) (allow|deny|reject|limit) (in (on [INTERFACE])) (from [ADDRESS] (port [PORT] | app [APPNAME])) (out (on [INTERFACE])) (to [ADDRESS] (port [PORT] | app [APPNAME])) (proto [PROTOCOL]) (comment COMMENT)
  ```
