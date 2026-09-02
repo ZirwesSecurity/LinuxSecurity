@@ -13,7 +13,8 @@
   - [Cleaning up caches](#cleaning-up-caches)
   - [Configuring rootful docker (not recommended)](#configuring-rootful-docker-not-recommended)
 
-Here, a security baseline for deploying docker containers is described. Tested with Ubuntu and Debian.
+Here, a security baseline for deploying docker containers is described. Tested with Ubuntu and Debian. In [Example service configuration](#example-service-configuration),
+a baseline configuration template is provided for a webserver running `nginx`, with `php` backend and `traefik` as reverse proxy.
 
 ## Installation and configuration
 
@@ -143,7 +144,7 @@ One important security aspect is that docker by default bypasses rules set up by
 
 ## Example service configuration
 
-The following shows a deployment template for a webserver with `compose.yaml`:
+The following shows a deployment template for a webserver running `nginx`, with `php` backend and `traefik` as reverse proxy, set up via `compose.yaml`:
 ```yaml
 # compose.yaml
 
