@@ -12,6 +12,7 @@ Additionally, a script to update docker contains daily is set up as well.
 - [Disable automated reboots (not recommended)](#disable-automated-reboots-not-recommended)
 - [Setting up manual reboots (compatible with remote-reboot)](#setting-up-manual-reboots-compatible-with-remote-reboot)
 - [Third-party repositories and docker](#third-party-repositories-and-docker)
+- [Automatic updates for docker containers](#automatic-updates-for-docker-containers)
 
 ## Installation and setup
 
