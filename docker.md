@@ -140,6 +140,7 @@ One important security aspect is that docker by default bypasses rules set up by
 - Never expose the docker socket to a container (not even read-only!). Be careful when using a bind mount with a broad path that could contain the socket (e.g. `/`, `/var`, `/var/run` for rootful docker or `/`, `/run`, `/run/user` for rootless docker). Instead, always use a socket proxy (see [Example service configuration](#example-service-configuration))
 - Limit the paths from the host that are exposed to the container. Always use `:ro,noexec,nosuid,nodev`. For writable storage, consider `tmpfs`
 - Limit the amount of containers that have a connection to the outside world. Use internal networks as much as possible and segregate containers from one another by using separate networks
+- Prefer either `network: "none"` or user defined bridge networks
 - Create a dedicated user for docker
 
 ## Example service configuration
@@ -211,7 +212,7 @@ services:
    volumes: # expose the docker socket. Never do this other than for the socket proxy
       - /run/user/1000/docker.sock:/var/run/docker.sock:ro,noexec,nosuid,nodev
     tmpfs:
-      - /run:rw,noexec,nosuid,nodev,mode=700,uid=0,gid=0
+      - /run:rw,noexec,nosuid,nodev,mode=700,uid=0,gid=0,size=500m,nr_inodes=400k
     #ports:
     # DO NOT EXPOSE
     networks: # access to the docker socket is dangerous. Do not expose this container
@@ -361,9 +362,9 @@ services:
     volumes:
       - ./html:/var/www/html:ro,noexec,nosuid,nodev
       - ./logs:/var/log/nginx:rw,noexec,nosuid,nodev
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro,noexec,nosuid,nodev
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro,noexec,nosuid,nodev # nginx configured to proxy to the php container
     tmpfs:
-      - /tmp:rw,noexec,nosuid,nodev,mode=700,uid=${NGINX_UID},gid=${NGINX_UID}
+      - /tmp:rw,noexec,nosuid,nodev,mode=700,uid=${NGINX_UID},gid=${NGINX_UID},size=500m,nr_inodes=400k
 
   php:
     image: php:8.5-fpm-alpine
@@ -386,7 +387,7 @@ services:
       - ./configs/php/999_lockdown.ini:/usr/local/etc/php/conf.d/999_lockdown.ini:ro,noexec,nosuid,nodev
       - ./configs/php/zzz_lockdown.conf:/usr/local/etc/php-fpm.d/zzz_lockdown.conf:ro,noexec,nosuid,nodev
     tmpfs:
-      - /tmp:rw,noexec,nosuid,nodev,mode=700,uid=${PHP_UID},gid=${PHP_UID}
+      - /tmp:rw,noexec,nosuid,nodev,mode=700,uid=${PHP_UID},gid=${PHP_UID},size=500m,nr_inodes=400k
 
 networks:
   traefik-network-with-internet:
@@ -451,11 +452,16 @@ http:
         customFrameOptionsValue: "DENY"
 
         customResponseHeaders:
+          # remove headers that might leak information
           Server: ""
           X-Powered-By: ""
+          X-CF-Powered-By: ""
+          X-AspNet-Version: ""
+          X-AspNetMvc-Version: ""
+          X-Runtime: ""
           X-XSS-Protection: "1; mode=block"
+          # important: block all external request attempts via the browser enforcing strict CORS
           X-Permitted-Cross-Domain-Policies: "none"
-          # important: block external requests via the browser enforcing strict CORS
           Cross-Origin-Embedder-Policy: "require-corp"
           Cross-Origin-Resource-Policy: "same-origin"
           Cross-Origin-Opener-Policy: "same-origin"
@@ -642,4 +648,59 @@ Enable starting docker on boot:
 sudo systemctl enable docker.service
 sudo systemctl enable containerd.service
 ```
+## TODO
 
+### pids-limit / mem_limit / cgroup / ulimits (nproc, nofile soft/hard) / shm_size / cpus
+
+- Compatibility with rootless docker
+
+### Healthcheck
+
+### Secrets handling
+
+- native secret handling (docker secret create), specify uid,gid,mode in `secrets:`
+- hashicorp
+- OpenBao
+- Sops
+
+### Encrypted docker volumes
+
+### Auth provider
+
+- Authentik
+- authelia
+- 
+
+### Docker build
+
+- locked-down user, multi-stage build, `RUN --network=none --mount=type=tmpfs --security=sandbox ...`,  `--mount=type=secret`
+
+### WAF between traefik and nginx
+
+- [https://www.bunkerweb.io/](https://www.bunkerweb.io/)
+- [modsecurity-crs-docker](https://github.com/coreruleset/modsecurity-crs-docker)
+- [https://github.com/chaitin/SafeLine](https://github.com/chaitin/SafeLine)
+
+### Encrypted volumes
+
+- LUKS volume mounted by systemd with key in TPM
+
+### Apparmor / seccomp
+
+### Docker + crowsec / fail2ban
+
+- [https://plugins.traefik.io/plugins/6335346ca4caa9ddeffda116/crowdsec-bouncer-traefik-plugin](https://plugins.traefik.io/plugins/6335346ca4caa9ddeffda116/crowdsec-bouncer-traefik-plugin)
+- [https://github.com/fail2ban/fail2ban/wiki/Fail2Ban-and-Docker](https://github.com/fail2ban/fail2ban/wiki/Fail2Ban-and-Docker)
+- [https://github.com/fail2ban/fail2ban/discussions/3534](https://github.com/fail2ban/fail2ban/discussions/3534)
+
+### ssh-based socket proxy
+
+### ipvlans / macvlans
+
+### Docker swarm
+
+- not available with rootless docker
+- swarm-specific secrets management
+- swarm-specific deploy limits (e.g. deploy: limits: pids: 1000)
+- Create replace default ingress network with encrypted overlay network: `sudo docker network create -d overlay --opt encrypted --attachable network`
+- Internal overlay networks
