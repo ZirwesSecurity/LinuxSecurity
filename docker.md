@@ -120,7 +120,7 @@ One important security aspect is that docker by default bypasses rules set up by
 - Only use [rootless docker](#installation-and-configuration)
 - Do not publish ports like this: `ports: 80:8080`. If the port should be published on all interfaces, make the intention clear `ports: 0.0.0.0:80:8080/tcp`
 - Docker bypasses ufw by default. See [ufw and docker](ufw.md#ufw-and-docker)
-- Keep both docker itself and containers updated. See [Third-party repositories and docker](AutomaticUpdates.md#third-party-repositories-and-docker#) and [Automatic updates for docker containers](AutomaticUpdates.md#automatic-updates-for-docker-containers).
+- Keep both docker itself and containers updated. See [Third-party repositories and docker](AutomaticUpdates.md#third-party-repositories-and-docker) and [Automatic updates for docker containers](AutomaticUpdates.md#automatic-updates-for-docker-containers).
 - Never start a container with
   - `privileged: true`
   - `userns_mode: host`
