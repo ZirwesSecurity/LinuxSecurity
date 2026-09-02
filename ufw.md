@@ -317,3 +317,5 @@ sudo sed -i '/icmp/s/ACCEPT/DROP/' /etc/ufw/before.rules
 sudo ufw reload
 ```
 TODO: how to do this for ipv6 without causing conflict with other parts of the ipv6 protocol?
+
+TODO: portknocking
