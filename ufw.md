@@ -13,15 +13,15 @@ ufw is a simple tool for setting firewall rules using iptables/nftables as backe
 ## Basic usage
 
 To install ufw, run
-```
+```bash
 sudo apt install ufw
 ```
 After installation, the firewall is not yet active. The status can be checked with
-```
+```bash
 sudo systemctl status ufw
 ```
 or
-```
+```bash
 sudo ufw status verbose
 ```
 By default (if no other rule matches), all outgoing packets are allowed, all new incoming packets which do not match outgoing traffic are denied (i.e. silently dropped) and forwarding/routing (i.e. non-local traffic not originating from or going to the machine) is denied. In addition, there are a handful of additional rules by default:
@@ -72,25 +72,25 @@ sudo ufw (--dry-run) (prepend|delete|insert [NUM]) (allow|deny|reject|limit) (in
 - `[COMMENT]` Optional: add a comment for the rule, e.g. `comment "my new rule"`
 
 To see the rules while ufw is inactive, use
-```
+```bash
 sudo ufw show added
 ```
 
 To active the rules, run (NOTE: if you are connected via ssh, make sure the ssh connection is allowed first, e.g. with `sudo ufw limit 22/tcp`!)
-```
+```bash
 sudo ufw enable
 ```
 Check the status with `sudo systemctl status ufw` and `sudo ufw status verbose`.
 To restart ufw (after changing settings), run
-```
+```bash
 sudo ufw reload
 ```
 or
-```
+```bash
 sudo ufw disable && sudo ufw enable
 ```
 To see more details about the rules, run
-```
+```bash
 sudo ufw status verbose
 sudo ufw status numbered
 sudo ufw show added
@@ -108,17 +108,17 @@ Default rules can be seen in
 /etc/ufw/sysctl.conf
 ```
 To delete a rule, run either
-```
+```bash
 sudo ufw delete [rule]
 ```
 or
-```
+```bash
 sudo ufw delete [NUM]
 ```
 where [rule] is the same rule as specified when it was added (ignoring the comment) and [NUM] is the rule's number as given by `sudo ufw status numbered`. Note that the rule numbers may change after deletion, so be careful with consecutive `ufw delete [NUM]`. Also, `ufw delete [rule]` will affect both ipv4 and ipv6 rules (if applicable) while `ufw delete [NUM]` only deletes the chosen number.
 
 To reset ufw (i.e. restore defaults and remove all rules), run
-```
+```bash
 ufw reset # this also disables ufw
 ```
 
@@ -127,7 +127,7 @@ Logging can be specified with
 sudo ufw logging (on|off|low|medium|high|full)
 ```
 By default, logging is set to `low` (higher values can lead to excessively large log files). To see the logs, run
-```
+```bash
 sudo journalctl -g "UFW"
 ```
 or check `/var/log/ufw.log` (depending on the system).
@@ -196,40 +196,40 @@ Reload ufw to apply changes `sudo ufw reload`. Incoming traffic is then handled 
 ## Examples
 
 Allow incoming http and https:
-```
+```bash
 sudo ufw allow 80,443/tcp
 sudo ufw allow 443/udp comment "For QUIC"
 ```
 Allow (and rate limit) incoming ssh with standard port 22 (the port on this machine) from any network:
-```
+```bash
 sudo ufw limit 22/tcp
 ```
 Allow (and rate limit) ssh with standard port 22 only from the internal network 192.168.178.* to any (interface) IP of this machine (note: is does not really make sense to specify a "from" port because it is a randomized high port number for each connection):
-```
+```bash
 sudo ufw limit from 192.168.178.0/24 to any port 22 proto tcp
 ```
 Allow (and rate limit) ssh with standard port 22 only from the internal network 192.168.178.* with destination in the internal network (e.g. the machine itself. Instead of using the IP range in the `to` address, could use the IP of the server if it as a static IP):
-```
+```bash
 sudo ufw limit from 192.168.178.0/24 to 192.168.178.0/24 port 22 proto tcp
 ```
 Allow (and limit) ssh with standard port 22 only via the specific the interface enp0s8, e.g. the one for the internal network (note that interface names might change over time, so in this case, prefer the previous rule):
-```
+```bash
 sudo ufw limit in on enp0s8 from any to any port 22 proto tcp
 ```
 This can be made even more restrictive (not allowing receiving/forwarding/tunneling packets from other interfaces/networks) by using (here, 1.1.1.1 is the client's address, 1.1.1.2 is the server's address on the specified interface, address ranges as in the previous example, e.g. if the server and/or client do not have a static ip, are possible as well):
-```
+```bash
 sudo ufw limit in on enp0s8 from 1.1.1.1 to 1.1.1.2 port 22 proto tcp
 ```
 To allow outgoing traffic, e.g. if the default outgoing policy is `deny`, use the following command (where 1.1.1.2 is the IP of the server where the command is run on (if it has a static ip, otherwise use a range) and enp0s8 its interface name affected by this rule, and 1.1.1.3 is the destination server whose IP can be a range as well) [note that again it does not make sense to specify a "from" port, because the outgoing connections will originate from a random high port]:
-```
+```bash
 sudo ufw allow out on enp0s8 from 1.1.1.2 to 1.1.1.3 port 22 proto tcp
 ```
 Or allow outgoing traffic only into the internal net to the default ssh port:
-```
+```bash
 sudo ufw allow out to 192.168.178.0/24 port 22 proto tcp # implies "from any"
 ```
 Or allow outgoing traffic if it goes to port 22 on the destination machine:
-```
+```bash
 sudo ufw allow out to any port 22 proto tcp # same as "ufw allow out 22/tcp" short-hand notation
 ```
 
@@ -256,7 +256,7 @@ allow forwarding by setting
 net.ipv4.ip_forward=1
 ```
 For ipv6, see `net/ipv6/conf/default/forwarding=1`. Then, add the routing rules (in general, it is not a good idea to manually set iptables rules since they are managed by ufw. This is only an example case):
-```
+```bash
 sudo iptables -t nat -A PREROUTING -i enp0s8 -p tcp --dport 80 -j DNAT --to-destination 9.9.9.9:80
 ```
 Destination NAT (DNAT) redirects incoming connections to the proxy's enp0s8 on port 80 to the destination server
@@ -266,7 +266,7 @@ Destination NAT (DNAT) redirects incoming connections to the proxy's enp0s8 on p
 - `-j DNAT`: rewrite the destinate address and port of the packet
 
 And for the reverse route:
-```
+```bash
 sudo iptables -t nat -A POSTROUTING -o enp0s9 -j MASQUERADE
 ```
 Source NAT (SNAT / MASQUERADE) so the destination server sends replies back to the proxy, not directly to the client.
@@ -276,35 +276,35 @@ Source NAT (SNAT / MASQUERADE) so the destination server sends replies back to t
 This is equivalent to `sudo iptables -t nat -A POSTROUTING -o enp0s9 -j SNAT --to-source 1.1.1.1`.
 
 Apply changes and disable ufw
-```
+```bash
 sudo sysctl -p
 sudo ufw reload
 sudo ufw disable
 ```
 Now, when running `curl 1.1.1.5` on the client, the website from `9.9.9.9` is displayed.
 After enabling ufw
-```
+```bash
 sudo ufw enable
 ```
 this does not work anymore, because ufw's default routing policy is `deny`.
 To allow the routing, add the following rules on the proxy:
-```
+```bash
 ufw route allow in on enp0s8 out on enp0s9
 ufw route allow in on enp0s9 out on enp0s8
 ```
 Alternatively, instead of specifying interfaces, the IPs (or IP ranges) of the interfaces can be specified:
-```
+```bash
 ufw route allow from 1.1.1.0/24 to 9.9.9.0/24
 ufw route allow from 9.9.9.0/24 to 1.1.1.0/24
 ```
 Note that no additional incoming or outgoing ufw rules are required, even if the default incoming and outgoing policies are set to `deny`.
 
-To me most restrictive, set the following rules. Allow routing through the proxy from the client to the destination server:
-```
+To be most restrictive and verbose, set the following rules. Allow routing through the proxy from the client to the destination server:
+```bash
 sudo ufw route allow in on enp0s8 from 1.1.1.1 out on enp0s9 to 9.9.9.9 port 80 proto tcp
 ```
 Allow routing through the proxy from the destination server back to the client:
-```
+```bash
 sudo ufw route allow in on enp0s9 from 9.9.9.9 port 80 out on enp0s8 to 1.1.1.1 port 80 proto tcp
 ```
 Note that the IPs are those from machines the client and destination, but interface names are those of the proxy! Also note that specifying port 80 as the destination port in the last rule only works due to the way ufw keeps track of connections. In general, only the source port should be specified (TODO: correct?)
@@ -312,7 +312,7 @@ Note that the IPs are those from machines the client and destination, but interf
 ## PING
 
 To block ping responses, run
-```
+```bash
 sudo sed -i '/icmp/s/ACCEPT/DROP/' /etc/ufw/before.rules
 sudo ufw reload
 ```
