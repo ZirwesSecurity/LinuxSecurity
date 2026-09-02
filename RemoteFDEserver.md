@@ -18,6 +18,8 @@ Ubuntu 24.04 LTS server installation:
 - Select "Ubuntu Server (minimized)"
 - Select "Encrypt the LVM group with LUKS"
 
+**IMPORTANT**: to set up automated reboots after security updates, see [Setting up manual reboots (compatible with remote-reboot)](AutomaticUpdates.md#setting-up-manual-reboots-compatible-with-remote-reboot).
+
 Debian 13 server
 - Select "Guided - use entire disk and set up encrypted LVM" (in the non-graphical installer)
 
