@@ -190,7 +190,7 @@ Likewise, add the following at the very end of `/etc/ufw/after6.rules` (AFTER th
 COMMIT
 # END UFW AND DOCKER
 ```
-Reload ufw to apply changes `sudo ufw reload`. Incoming traffic is then handled via ufw as expected. Traffic between containers can be managed via ufw routing rules (with the settings above, inter container communication is allowed).
+Reload ufw to apply changes `sudo ufw reload`. Incoming traffic is then handled via ufw as expected. Traffic between containers can be managed via ufw [Routing](#routing) rules (with the settings above, inter container communication is allowed).
 
 
 ## Examples
