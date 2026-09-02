@@ -105,7 +105,7 @@ In order to ensure security updates are applied automatically, two things have t
 
 ### Automatically updating docker itself
 
-See [Third-party repositories and docker](AutomaticUpdates.md#third-party-repositories-and-docker#)
+See [Third-party repositories and docker](AutomaticUpdates.md#third-party-repositories-and-docker)
 
 ### Automatically updating docker containers
 
