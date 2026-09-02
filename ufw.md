@@ -3,11 +3,12 @@
 # Uncomplicated Firewall (ufw)
 
 - [Basic usage](#basic-usage)
+- [ufw and docker](#ufw-and-docker)
 - [Examples](#examples)
 - [Routing](#routing)
 - [Ping](#ping)
 
-ufw is a simple tool for setting firewall rules using iptables/nftables as backend. The following steps have been tested with Ubuntu 24.04 LTS and Debian 13. Note that ufw only makes sense on simple servers where no other tools modify firewall rules (e.g. using ufw together with docker is probably not a good idea).
+ufw is a simple tool for setting firewall rules using iptables/nftables as backend. The following steps have been tested with Ubuntu 24.04 LTS and Debian 13. Note that ufw only makes sense on simple servers where no other tools modify firewall rules. Particularly, docker bypasses ufw by default. To have docker networks obey ufw rules and prevent accidental exposing of docker services, see [ufw and docker](#ufw-and-docker).
 
 ## Basic usage
 
@@ -130,6 +131,66 @@ By default, logging is set to `low` (higher values can lead to excessively large
 sudo journalctl -g "UFW"
 ```
 or check `/var/log/ufw.log` (depending on the system).
+
+## ufw and docker
+
+IMPORTANT: docker bypasses ufw rules by default (only containers using the host network are managed by ufw). In general, a server using ufw to block all incoming connections will not prevent connections to published docker container ports. To change this, add the following rules at the very end of `/etc/ufw/after.rules` (AFTER the last COMMIT line):
+```
+# BEGIN UFW AND DOCKER
+*filter
+:ufw-user-forward - [0:0]
+:ufw-docker-logging-deny - [0:0]
+:DOCKER-USER - [0:0]
+-A DOCKER-USER -j ufw-user-forward
+
+-A DOCKER-USER -m conntrack --ctstate RELATED,ESTABLISHED -j RETURN
+-A DOCKER-USER -m conntrack --ctstate INVALID -j DROP
+-A DOCKER-USER -i docker0 -o docker0 -j ACCEPT
+
+-A DOCKER-USER -j RETURN -s 10.0.0.0/8
+-A DOCKER-USER -j RETURN -s 172.16.0.0/12
+#-A DOCKER-USER -j RETURN -s 192.168.0.0/16 # I use this range for physical machines
+
+-A DOCKER-USER -j ufw-docker-logging-deny -m conntrack --ctstate NEW -d 10.0.0.0/8
+-A DOCKER-USER -j ufw-docker-logging-deny -m conntrack --ctstate NEW -d 172.16.0.0/12
+#-A DOCKER-USER -j ufw-docker-logging-deny -m conntrack --ctstate NEW -d 192.168.0.0/16
+
+-A DOCKER-USER -j RETURN
+
+-A ufw-docker-logging-deny -m limit --limit 3/min --limit-burst 10 -j LOG --log-prefix "[UFW DOCKER BLOCK] "
+-A ufw-docker-logging-deny -j DROP
+
+COMMIT
+# END UFW AND DOCKER
+```
+Likewise, add the following at the very end of `/etc/ufw/after6.rules` (AFTER the last COMMIT line) [TODO: ipv6 rules not yet tested]:
+```
+# BEGIN UFW AND DOCKER
+*filter
+:ufw-user-forward - [0:0]
+:ufw-docker-logging-deny - [0:0]
+:DOCKER-USER - [0:0]
+
+-A DOCKER-USER -j ufw-user-forward
+
+-A DOCKER-USER -m conntrack --ctstate RELATED,ESTABLISHED -j RETURN
+-A DOCKER-USER -m conntrack --ctstate INVALID -j DROP
+-A DOCKER-USER -i docker0 -o docker0 -j ACCEPT
+
+# Allow traffic originating from IPv6 Unique Local Addresses
+-A DOCKER-USER -j RETURN -s fc00::/7
+
+-A DOCKER-USER -j ufw-docker-logging-deny -m conntrack --ctstate NEW -d fc00::/7
+
+-A DOCKER-USER -j RETURN
+
+-A ufw-docker-logging-deny -m limit --limit 3/min --limit-burst 10 -j LOG --log-prefix "[UFW DOCKER BLOCK] "
+-A ufw-docker-logging-deny -j DROP
+
+COMMIT
+# END UFW AND DOCKER
+```
+Reload ufw to apply changes `sudo ufw reload`. Incoming traffic is then handled via ufw as expected. Traffic between containers can be managed via ufw routing rules (with the settings above, inter container communication is allowed).
 
 
 ## Examples
