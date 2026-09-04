@@ -698,8 +698,18 @@ RUN --mount=type=tmpfs,target=/tmp,size=20m ...
 
 # disable networking for this RUN command
 RUN --network=none ...
-#
 ```
+```Dockerfile
+FROM python:3.13 AS mysource
+#..
+FROM python:3.13-slim
+# read-only bind-mount of the /src directory from the mysource state
+RUN --mount=type=bind,from=mysource,source=/src,target=/src \
+    python /src/scripts/generate_version.py > /version.txt
+```
+In general, prefer multi-stage bulds:
+- Stage 1: install required tools and compile
+- Stage 2: create clean base image and copy only the compiled tools to it
 
 ## Appendix
 
