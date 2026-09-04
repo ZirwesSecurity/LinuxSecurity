@@ -711,6 +711,10 @@ In general, prefer multi-stage bulds:
 - Stage 1: install required tools and compile
 - Stage 2: create clean base image and copy only the compiled tools to it
 
+TODO:
+- best way to create unprivileged user?
+- best way to create locked-down user?
+
 ## Appendix
 
 ### Cleaning up caches
