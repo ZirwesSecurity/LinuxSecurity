@@ -9,6 +9,7 @@
 - [Docker and firewalls](#docker-and-firewalls)
 - [General guidelines and gotchas](#general-guidelines-and-gotchas)
 - [Example service configuration](#example-service-configuration)
+- [Secrets](#secrets)
 - [Appendix](#appendix)
   - [Cleaning up caches](#cleaning-up-caches)
   - [Configuring rootful docker (not recommended)](#configuring-rootful-docker-not-recommended)
@@ -595,6 +596,96 @@ tls:
       disableSessionTickets: false
 ```
 
+## Secrets
+
+By default, secrets management in docker is quite limited.
+- TODO: Look at hashicorp vault
+- TODO: OpenBao
+- TODO: Sops
+- TODO: Look at swarm-specific secrets (but swarm is not compatible with rootless docker)
+
+The following sample setup showcases the different secret mechanisms:
+```yaml
+# compose.yaml
+services:
+  myservice:
+    build:
+      context: .
+      secrets:
+        # make secret available to RUN command from file on host:
+        - myBuildSecretFile
+        # make secret available to RUN command from environment variable on host:
+        - myBuildSecretEnv
+    environment:
+       # use secrets in the container by reading from provided files
+       MYSQL_PASSWORD_FILE: "/run/secrets/myFile"
+       ADMIN_PASSWORD_FILE: "/run/secrets/myFileFromEnv"
+       # There is no way with default secrets to create environment variables. Either
+       # run a command inside the container like 'env=$(cat file.txt)' or use .env
+       NOT_TECHNICALLY_A_SECRET: "${FROM_DOT_ENV}"
+    secrets:
+      - source: mySecretFile
+        target: /run/secrets/myFile # essentially read only bind bound into the container
+      - source: mySecretEnv
+        target: /run/secrets/myFileFromEnv # passing the secret as env from host to file in container
+        uid: "103" # uid, gid and mode only available when passing as environment
+        gid: "103" # WARNING: It looks like no matter which values are set for uid and gid,
+        mode: 0o400 # they are always the same as the user running in the container. Only "mode" is honored
+secrets:
+  mySecretFile: # secret 1: file from the host bind-mounted into the container
+    file: ./myFile
+  mySecretEnv: # secret 2: environment variable from the host created as a file in the container
+    environment: "MYSECRET"
+  myBuildSecretFile:
+    file: ./myBuildFile # secret 3: provide a file as secret during build (as file or env)
+  myBuildSecretEnv:
+    environment: "MYBUILDSECRET" # secret 4: provide an environment variable from the host to build (as file or env)
+```
+
+```Dockerfile
+# Dockerfile
+FROM alpine:latest
+
+RUN adduser -D -u 103 app
+USER 103
+
+# pass secret as file from the host to a file for RUN
+RUN --mount=type=secret,id=myBuildSecretFile,target="/somedir/myBuildSecretFile.txt",uid=103,gid=103,mode=0400 \
+    cat /somedir/myBuildSecretFile.txt
+
+# pass secret as file from the host as an environment variable to RUN
+RUN --mount=type=secret,id=myBuildSecretFile,env="myBuildSecretFileAsEnv" \
+    echo "$myBuildSecretFileAsEnv" && test "$myBuildSecretFileAsEnv" = "secretdef"
+
+# pass secret from env on the host to a file for RUN
+RUN --mount=type=secret,id=myBuildSecretEnv,target="/somedir/myBuildSecretEnv.txt",uid=103,gid=103,mode=0400 \
+    cat /somedir/myBuildSecretEnv.txt
+
+# pass secret from env on the host to env in RUN
+RUN --mount=type=secret,id=myBuildSecretEnv,env="myBuildSecretEnvEnv" \
+    echo "$myBuildSecretEnvEnv" && test "$myBuildSecretEnvEnv" = "secret456"
+```
+
+Prepare the secrets on the Host:
+```bash
+export MYSECRET="secret123"
+export MYBUILDSECRET="secret456"
+echo -n "secretabc" > myFile
+echo -n "secretdef" > myBuildFile
+echo -n '"FROM_DOT_ENV="not technically a secret"' > .env
+```
+
+Test:
+```bash
+docker compose build --progress=plain --no-cache
+
+docker compose run --rm myservice cat /run/secrets/myFile
+docker compose run --rm myservice cat /run/secrets/myFileFromEnv
+docker compose run --rm myservice sh -c 'echo "$MYSQL_PASSWORD_FILE"'
+docker compose run --rm myservice sh -c 'echo "$ADMIN_PASSWORD_FILE"'
+docker compose run --rm myservice sh -c 'echo "$NOT_TECHNICALLY_A_SECRET"'
+```
+
 ## Appendix
 
 ### Cleaning up caches
@@ -651,18 +742,13 @@ sudo systemctl enable containerd.service
 ```
 ## TODO
 
+### Unnamend and named volumes
+
 ### pids-limit / mem_limit / cgroup / ulimits (nproc, nofile soft/hard) / shm_size / cpus
 
 - Compatibility with rootless docker
 
 ### Healthcheck
-
-### Secrets handling
-
-- native secret handling (docker secret create), specify uid,gid,mode in `secrets:`
-- hashicorp
-- OpenBao
-- Sops
 
 ### Encrypted docker volumes
 
