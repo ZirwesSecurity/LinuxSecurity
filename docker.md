@@ -598,13 +598,7 @@ tls:
 
 ## Secrets
 
-By default, secrets management in docker is quite limited.
-- TODO: Look at hashicorp vault
-- TODO: OpenBao
-- TODO: Sops
-- TODO: Look at swarm-specific secrets (but swarm is not compatible with rootless docker)
-
-The following sample setup showcases the different secret mechanisms:
+By default, secrets management in docker is quite limited. The following sample setup showcases the different secret mechanisms:
 ```yaml
 # compose.yaml
 services:
@@ -620,7 +614,7 @@ services:
        # use secrets in the container by reading from provided files
        MYSQL_PASSWORD_FILE: "/run/secrets/myFile"
        ADMIN_PASSWORD_FILE: "/run/secrets/myFileFromEnv"
-       # There is no way with default secrets to create environment variables. Either
+       # There is no way with default secrets to directly create environment variables. Either
        # run a command inside the container like 'env=$(cat file.txt)' or use .env
        NOT_TECHNICALLY_A_SECRET: "${FROM_DOT_ENV}"
     secrets:
@@ -685,6 +679,11 @@ docker compose run --rm myservice sh -c 'echo "$MYSQL_PASSWORD_FILE"'
 docker compose run --rm myservice sh -c 'echo "$ADMIN_PASSWORD_FILE"'
 docker compose run --rm myservice sh -c 'echo "$NOT_TECHNICALLY_A_SECRET"'
 ```
+
+- TODO: Look at hashicorp vault
+- TODO: OpenBao
+- TODO: Sops
+- TODO: Look at swarm-specific secrets (but swarm is not compatible with rootless docker)
 
 ## Appendix
 
