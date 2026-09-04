@@ -136,7 +136,7 @@ One important security aspect is that docker by default bypasses rules set up by
   - `tty: false`
   - `no-new-privileges:true`
   - `cap_drop: -ALL`
-  . `user: "6000:6000"` # run as an arbitrary user, chosse differn UID for every service
+  - `user: "6000:6000"` # run as an arbitrary user, choose differnt UID for every service
 - Never expose the docker socket to a container (not even read-only!). Be careful when using a bind mount with a broad path that could contain the socket (e.g. `/`, `/var`, `/var/run` for rootful docker or `/`, `/run`, `/run/user` for rootless docker). Instead, always use a socket proxy (see [Example service configuration](#example-service-configuration))
 - Limit the paths from the host that are exposed to the container. Always use `:ro,noexec,nosuid,nodev`. For writable storage, consider `tmpfs`
 - Limit the amount of containers that have a connection to the outside world. Use internal networks as much as possible and segregate containers from one another by using separate networks
@@ -484,6 +484,7 @@ http:
           child-src 'self';
           worker-src 'self';
           manifest-src 'none';
+          block-all-mixed-content;
           require-trusted-types-for 'script';
           trusted-types 'none';
           upgrade-insecure-requests;
@@ -669,11 +670,12 @@ sudo systemctl enable containerd.service
 
 - Authentik
 - authelia
-- 
+- pocketid+oauth2-proxy?
+- keycloak
 
 ### Docker build
 
-- locked-down user, multi-stage build, `RUN --network=none --mount=type=tmpfs --security=sandbox ...`,  `--mount=type=secret`
+- locked-down user, multi-stage build, `RUN --network=none --mount=type=tmpfs --security=sandbox ...`,  `--mount=type=secret` (so that info does not end up in image)
 
 ### WAF between traefik and nginx
 
