@@ -10,6 +10,7 @@
 - [General guidelines and gotchas](#general-guidelines-and-gotchas)
 - [Example service configuration](#example-service-configuration)
 - [Secrets](#secrets)
+- [Dockerfile](#dockerfile)
 - [Appendix](#appendix)
   - [Cleaning up caches](#cleaning-up-caches)
   - [Configuring rootful docker (not recommended)](#configuring-rootful-docker-not-recommended)
@@ -644,19 +645,19 @@ RUN adduser -D -u 103 app
 USER 103
 
 # pass secret as file from the host to a file for RUN
-RUN --mount=type=secret,id=myBuildSecretFile,target="/somedir/myBuildSecretFile.txt",uid=103,gid=103,mode=0400 \
+RUN --mount=type=secret,id=myBuildSecretFile,target="/somedir/myBuildSecretFile.txt",uid=103,gid=103,mode=0400,required=true \
     cat /somedir/myBuildSecretFile.txt
 
 # pass secret as file from the host as an environment variable to RUN
-RUN --mount=type=secret,id=myBuildSecretFile,env="myBuildSecretFileAsEnv" \
+RUN --mount=type=secret,id=myBuildSecretFile,env="myBuildSecretFileAsEnv",required=true \
     echo "$myBuildSecretFileAsEnv" && test "$myBuildSecretFileAsEnv" = "secretdef"
 
 # pass secret from env on the host to a file for RUN
-RUN --mount=type=secret,id=myBuildSecretEnv,target="/somedir/myBuildSecretEnv.txt",uid=103,gid=103,mode=0400 \
+RUN --mount=type=secret,id=myBuildSecretEnv,target="/somedir/myBuildSecretEnv.txt",uid=103,gid=103,mode=0400,required=true \
     cat /somedir/myBuildSecretEnv.txt
 
 # pass secret from env on the host to env in RUN
-RUN --mount=type=secret,id=myBuildSecretEnv,env="myBuildSecretEnvEnv" \
+RUN --mount=type=secret,id=myBuildSecretEnv,env="myBuildSecretEnvEnv",required=true \
     echo "$myBuildSecretEnvEnv" && test "$myBuildSecretEnvEnv" = "secret456"
 ```
 
@@ -684,6 +685,21 @@ docker compose run --rm myservice sh -c 'echo "$NOT_TECHNICALLY_A_SECRET"'
 - TODO: OpenBao
 - TODO: Sops
 - TODO: Look at swarm-specific secrets (but swarm is not compatible with rootless docker)
+
+### Dockerfile
+
+When using RUN, consider the following options:
+
+```Dockerfile
+RUN --mount=type=secret,... # see section above
+
+# create scratch space for only this RUN command
+RUN --mount=type=tmpfs,target=/tmp,size=20m ...
+
+# disable networking for this RUN command
+RUN --network=none ...
+#
+```
 
 ## Appendix
 
