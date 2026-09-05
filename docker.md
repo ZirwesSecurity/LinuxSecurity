@@ -688,8 +688,29 @@ docker compose run --rm myservice sh -c 'echo "$NOT_TECHNICALLY_A_SECRET"'
 
 ### Dockerfile
 
-When using RUN, consider the following options:
+Create a locked-down user for the service:
 
+```Dockerfile
+# For Debian/Ubuntu base:
+RUN groupadd -r -g 10001 mygname && \
+    useradd -r -M -N -s /bin/false -u 10001 -g mygname myuname
+#Alternatively: -s /usr/sbin/nologin
+USER 10001:10001
+COPY --chown=10001:10001 --chmod 400 . /somedir
+
+#For alpine/busybox base:
+RUN addgroup -S -g 10001 mygname && \
+             adduser -S -D -H -u 10001 -G mygname -s /bin/false myuname
+#Alternatively: -s /sbin/nologin
+USER 10001:10001
+COPY --chown=10001:10001 --chmod 400 . /somedir
+
+#For distroless/scratch:
+USER 10001:10001
+COPY --chown=10001:10001 --chmod 400 . /somedir
+```
+
+When using RUN, consider the following options:
 ```Dockerfile
 RUN --mount=type=secret,... # see section above
 
@@ -700,9 +721,9 @@ RUN --mount=type=tmpfs,target=/tmp,size=20m ...
 RUN --network=none ...
 ```
 ```Dockerfile
-FROM python:3.13 AS mysource
+FROM python:latest-slim AS mysource
 #..
-FROM python:3.13-slim
+FROM python:latest-slim
 # read-only bind-mount of the /src directory from the mysource state
 RUN --mount=type=bind,from=mysource,source=/src,target=/src \
     python /src/scripts/generate_version.py > /version.txt
@@ -821,3 +842,5 @@ sudo systemctl enable containerd.service
 - swarm-specific deploy limits (e.g. deploy: limits: pids: 1000)
 - Create replace default ingress network with encrypted overlay network: `sudo docker network create -d overlay --opt encrypted --attachable network`
 - Internal overlay networks
+
+### docker in docker
