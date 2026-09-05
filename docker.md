@@ -660,6 +660,7 @@ RUN --mount=type=secret,id=myBuildSecretEnv,target="/somedir/myBuildSecretEnv.tx
 RUN --mount=type=secret,id=myBuildSecretEnv,env="myBuildSecretEnvEnv",required=true \
     echo "$myBuildSecretEnvEnv" && test "$myBuildSecretEnvEnv" = "secret456"
 ```
+Note: the whole build process can be done offline: `docker build --network=none .`
 
 Prepare the secrets on the Host:
 ```bash
@@ -719,6 +720,9 @@ RUN --mount=type=tmpfs,target=/tmp,size=20m ...
 
 # disable networking for this RUN command
 RUN --network=none ...
+
+# create environment variables only for this RUN command
+#RUN var="abc" ...
 ```
 ```Dockerfile
 FROM python:latest-slim AS mysource
@@ -731,6 +735,8 @@ RUN --mount=type=bind,from=mysource,source=/src,target=/src \
 In general, prefer multi-stage bulds:
 - Stage 1: install required tools and compile
 - Stage 2: create clean base image and copy only the compiled tools to it
+
+Also, be careful about which files are being exposed in the build context. Prefer a dedicated directory instead of `.` and use a `.dockerignore` file.
 
 TODO:
 - best way to create unprivileged user?
