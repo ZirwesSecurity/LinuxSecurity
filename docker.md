@@ -58,6 +58,12 @@ Then, in `~/.config/docker/daemon.json` set
       "com.docker.network.bridge.trusted_host_interfaces": "false"
     }
   },
+  "builder": {
+    "gc": {
+      "enabled": true,
+      "defaultKeepStorage": "20GB"
+    }
+  },
   "log-opts": {
     "cache-disabled": "false",
     "cache-max-file": "5",
@@ -580,15 +586,15 @@ tls:
         - X25519MLKEM768
         - SecP384r1MLKEM1024
         #- SecP256r1MLKEM768
-        #- MLKEM1024
+        - MLKEM1024
         - X25519
         - CurveP521
         #- CurveP384
         #- CurveP256
-      cipherSuites: # only allow strong ciphers
-        - TLS_AES_256_GCM_SHA384
-        - TLS_CHACHA20_POLY1305_SHA256
-        #- TLS_AES_128_GCM_SHA256
+      #cipherSuites: # this is only relevant for TLS1.2
+      #  - TLS_AES_256_GCM_SHA384
+      #  - TLS_CHACHA20_POLY1305_SHA256
+      #  #- TLS_AES_128_GCM_SHA256
       sniStrict: true # check the host name during TLS handshake
       alpnProtocols:
         - h2
@@ -618,6 +624,9 @@ services:
        # There is no way with default secrets to directly create environment variables. Either
        # run a command inside the container like 'env=$(cat file.txt)' or use .env
        NOT_TECHNICALLY_A_SECRET: "${FROM_DOT_ENV}"
+       # otherwise, use the following mechanism to expose environment variables, but again, this not considered a docker secret
+       #env_file:
+       # - myfile.env # contains entries like MYPASSWORD=1234, which are then provided as environment variables in the contaienr
     secrets:
       - source: mySecretFile
         target: /run/secrets/myFile # essentially read only bind bound into the container
@@ -771,6 +780,12 @@ In `/etc/docker/daemon.json`, write
       "com.docker.network.bridge.host_binding_ipv4": "127.0.0.1",
       "com.docker.network.bridge.enable_icc": "false",
       "com.docker.network.bridge.trusted_host_interfaces": "false"
+    }
+  },
+  "builder": {
+    "gc": {
+      "enabled": true,
+      "defaultKeepStorage": "20GB"
     }
   },
   "log-opts": {
