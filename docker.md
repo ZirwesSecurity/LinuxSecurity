@@ -54,8 +54,7 @@ Then, in `~/.config/docker/daemon.json` set
   "default-cgroupns-mode": "private",
   "default-network-opts": {
     "bridge": {
-      "com.docker.network.bridge.host_binding_ipv4": "127.0.0.1",
-      "com.docker.network.bridge.trusted_host_interfaces": "false"
+      "com.docker.network.bridge.host_binding_ipv4": "127.0.0.1"
     }
   },
   "builder": {
@@ -255,9 +254,9 @@ services:
       - "--providers.file.filename=/etc/traefiksecurity.yaml"
       - "--ping=false"
       # HTTP
-      - "--entrypoints.web.address=:80/tcp"
+      - "--entrypoints.web.address=:80/tcp" # listen on all interfaces
       - "--entrypoints.web.http.sanitizePath=true"
-      - "--entrypoints.web.forwardedHeaders.insecure=false"
+      - "--entrypoints.web.forwardedHeaders.insecure=false" # strip X-Forwarded headers
       - "--entrypoints.web.http.aliasHeadersStrategy=reject"
       - "--entrypoints.web.http.maxHeaderBytes=65536"
       - "--entrypoints.web.http.encodedCharacters.allowEncodedSlash=false"
@@ -271,10 +270,10 @@ services:
       - "--entrypoints.web.http.encodeQuerySemicolons=true"
       # HTTPS
       - "--core.strictTLSOptions=true"
-      - "--entrypoints.websecure.address=:443/tcp"
+      - "--entrypoints.websecure.address=:443/tcp"  # listen on all interfaces
       - "--entrypoints.websecure.http.sanitizePath=true"
       - "--entrypoints.websecure.http.aliasHeadersStrategy=reject"
-      - "--entrypoints.websecure.forwardedHeaders.insecure=false"
+      - "--entrypoints.websecure.forwardedHeaders.insecure=false" # strip X-Forwarded headers
       - "--entrypoints.websecure.http.maxHeaderBytes=65536"
       - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
       - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
@@ -406,7 +405,6 @@ networks:
     driver_opts:
       com.docker.network.bridge.host_binding_ipv4: "127.0.0.1"
       com.docker.network.bridge.enable_icc: "false" # traefik is the only container in this network!
-      com.docker.network.bridge.trusted_host_interfaces: "false"
   socketproxynetwork: # socket proxy <-> traefik
     name: socketproxynetwork
     internal: true # Important: do not give access to the outside
@@ -415,7 +413,6 @@ networks:
     driver_opts:
       com.docker.network.bridge.host_binding_ipv4: "127.0.0.1"
       com.docker.network.bridge.enable_icc: "true" # socket proxy <-> traefik
-      com.docker.network.bridge.trusted_host_interfaces: "false"
   php_nginx-internal-network: # nginx <-> php
     name: php_nginx-internal-network
     internal: true # Important: do not give access to the outside
@@ -424,7 +421,6 @@ networks:
     driver_opts:
       com.docker.network.bridge.host_binding_ipv4: "127.0.0.1"
       com.docker.network.bridge.enable_icc: "true" # nginx <-> php
-      com.docker.network.bridge.trusted_host_interfaces: "false"
   nginx_traefik-internal-network: # nginx <-> traefik
     name: nginx_traefik-internal-network
     internal: true # Important: do not give access to the outside
@@ -433,7 +429,6 @@ networks:
     driver_opts:
       com.docker.network.bridge.host_binding_ipv4: "127.0.0.1"
       com.docker.network.bridge.enable_icc: "true" # nginx <-> traefik
-      com.docker.network.bridge.trusted_host_interfaces: "false"
 ```
 Define the variables from `compose.yaml` in `.env`:
 ```
@@ -492,7 +487,6 @@ http:
           child-src 'self';
           worker-src 'self';
           manifest-src 'none';
-          block-all-mixed-content;
           require-trusted-types-for 'script';
           trusted-types 'none';
           upgrade-insecure-requests;
@@ -778,8 +772,7 @@ In `/etc/docker/daemon.json`, write
   "default-network-opts": {
     "bridge": {
       "com.docker.network.bridge.host_binding_ipv4": "127.0.0.1",
-      "com.docker.network.bridge.enable_icc": "false",
-      "com.docker.network.bridge.trusted_host_interfaces": "false"
+      "com.docker.network.bridge.enable_icc": "false"
     }
   },
   "builder": {
@@ -829,6 +822,9 @@ sudo systemctl enable containerd.service
 - authelia
 - pocketid+oauth2-proxy?
 - keycloak
+- Tinyauth
+- Teleport
+- [https://doc.traefik.io/traefik/master/reference/routing-configuration/http/middlewares/forwardauth/#trustforwardheader](https://doc.traefik.io/traefik/master/reference/routing-configuration/http/middlewares/forwardauth/#trustforwardheader)
 
 ### Docker build
 
@@ -839,6 +835,7 @@ sudo systemctl enable containerd.service
 - [https://www.bunkerweb.io/](https://www.bunkerweb.io/)
 - [modsecurity-crs-docker](https://github.com/coreruleset/modsecurity-crs-docker)
 - [https://github.com/chaitin/SafeLine](https://github.com/chaitin/SafeLine)
+- [https://docs.crowdsec.net/docs/appsec/intro/](https://docs.crowdsec.net/docs/appsec/intro/)
 
 ### Encrypted volumes
 
@@ -865,3 +862,12 @@ sudo systemctl enable containerd.service
 - Internal overlay networks
 
 ### docker in docker
+
+### Rootless docker installation
+
+In theory, rootless docker can be installed completely without root:
+```bash
+curl -fsSL https://get.docker.com/rootless | sh # not integrated with package manager
+```
+However, if I understand correctly, this is then not integrated with the packet manager and makes auto updates more annoying. Not sure if this provides any security benefits otherwise.
+
