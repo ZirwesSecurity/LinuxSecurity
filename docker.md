@@ -869,5 +869,5 @@ In theory, rootless docker can be installed completely without root:
 ```bash
 curl -fsSL https://get.docker.com/rootless | sh # not integrated with package manager
 ```
-However, if I understand correctly, this is then not integrated with the packet manager and makes auto updates more annoying. Not sure if this provides any security benefits otherwise.
+However, if I understand correctly, this is then not integrated with the packet manager and makes auto updates more annoying. Not sure if this provides any security benefits otherwise. Also, remember to add net bind capabilities after every (manual) update.
 
