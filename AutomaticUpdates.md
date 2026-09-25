@@ -187,6 +187,11 @@ Check that it worked:
 ```bash
 sudo unattended-upgrade --dry-run --debug | grep -i docker
 ```
+Updating docker removes the capabilities from `/usr/bin/rootlesskit`. Therefore, add `/etc/apt/apt.conf.d/99-rootlesskit-caps` with the content
+```
+DPkg::Post-Invoke { "/usr/bin/setcap cap_net_bind_service=ep /usr/bin/rootlesskit 2>/dev/null || true"; };
+```
+Note that this only works if docker was installed with the method from [Installation and Configuration](docker.md#installation-and-configuration). If the rootless install script from `get.docker.com/rootless`, docker is not managed by apt so this method will not work. The rootlesskit binary will also be located in the user directory.
 
 ## Automatic updates for docker containers
 
