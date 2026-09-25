@@ -542,7 +542,7 @@ http:
             depth: 1
             ipv6Subnet: 64
 
-    vaseinflight:
+    baseinflight:
       inFlightReq:
         amount: 100
 
