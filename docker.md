@@ -93,7 +93,7 @@ To allow exposing privileged ports (if there are existing docker networks, they 
 ```bash
 sudo setcap cap_net_bind_service=ep $(which rootlesskit)
 ```
-You might also have to run
+Note that after an update of docker, the capability has to be re-applied. You might also have to run
 ```bash
 sudo tee /etc/modules-load.d/docker.conf <<EOF >/dev/null
 br_netfilter
