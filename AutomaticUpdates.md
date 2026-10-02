@@ -187,11 +187,45 @@ Check that it worked:
 ```bash
 sudo unattended-upgrade --dry-run --debug | grep -i docker
 ```
-Updating docker removes the capabilities from `/usr/bin/rootlesskit`. Therefore, add `/etc/apt/apt.conf.d/99-rootlesskit-caps` with the content
+Updating docker may remove the capabilities from `/usr/bin/rootlesskit`. Additionally, since rootless docker runs in the user space, the user docker service will not be restarted automatically. Therefore, create a new file with `sudo vim /etc/apt/apt.conf.d/99-docker-restart` with the following content:
 ```
-DPkg::Post-Invoke { "/usr/bin/setcap cap_net_bind_service=ep /usr/bin/rootlesskit 2>/dev/null || true"; };
+DPkg::Post-Invoke {
+    "/etc/check-docker-restart || true";
+};
 ```
-Note that this only works if docker was installed with the method from [Installation and Configuration](docker.md#installation-and-configuration). If the rootless install script from `get.docker.com/rootless`, docker is not managed by apt so this method will not work. The rootlesskit binary will also be located in the user directory.
+Note that this only works if docker was installed with the method from [Installation and Configuration](docker.md#installation-and-configuration). If the rootless install script from `get.docker.com/rootless` is used instead, docker is not managed by `apt` so this method will not work. The rootlesskit binary will also be located in the user directory. Next, create the script with
+```bash
+sudo vim /etc/check-docker-restart
+```
+with the following content (**don't forget to replace the username!**) (remove the setcap line if you do not need docker to listen on priviledged ports):
+```
+#!/bin/bash
+set -e
+# Unconditionally set the capability every time
+# if this fails, the docker service is restarted anyways
+# I think it is better to have a broken container
+# than an unpatched one. Remove the /usr/bin/setcap line
+# if you do not need docker to listen on priviledged ports
+/usr/bin/setcap cap_net_bind_service=ep /usr/bin/rootlesskit || true; # do not terminate on failure
+prevVersions=$(cat /etc/my-combined-docker-version-string 2>/dev/null || true)
+curVersions=$(dpkg-query -W -f='${Version}' docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin docker-model-plugin docker.io rootlesskit docker-cli docker-ce-rootless-extras 2>/dev/null || true)
+if [[ "$prevVersions" != "$curVersions" ]]; then
+    # IMPORTANT: add the correct user name of the user using docker here instead of "mydockerusername"
+    echo "[CustomScript] Attempting custom docker service restart"
+    /usr/bin/systemctl --user --machine=mydockerusername@.host restart docker.service
+    printf '%s\n' "$curVersions" > /etc/my-combined-docker-version-string
+    echo "[CustomScript] docker service restart successful"
+fi
+```
+and finally
+```bash
+sudo chmod +x /etc/check-docker-restart
+```
+Create the first version tracker file manually (optional):
+```bash
+curVersions=$(dpkg-query -W -f='${Version}' docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin docker-model-plugin docker.io rootlesskit docker-cli docker-ce-rootless-extras 2>/dev/null || true)
+printf '%s\n' "$curVersions" | sudo tee /etc/my-combined-docker-version-string
+```
 
 ## Automatic updates for docker containers
 
