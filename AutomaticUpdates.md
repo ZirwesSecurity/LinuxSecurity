@@ -198,7 +198,7 @@ Note that this only works if docker was installed with the method from [Installa
 sudo vim /etc/check-docker-restart
 ```
 with the following content (**don't forget to replace the username!**) (remove the setcap line if you do not need docker to listen on priviledged ports):
-```
+```bash
 #!/bin/bash
 set -e
 # Unconditionally set the capability every time
