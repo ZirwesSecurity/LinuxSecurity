@@ -212,7 +212,7 @@ curVersions=$(dpkg-query -W -f='${Version}' docker-ce docker-ce-cli containerd.i
 if [[ "$prevVersions" != "$curVersions" ]]; then
     # IMPORTANT: add the correct user name of the user using docker here instead of "mydockerusername"
     echo "[CustomScript] Attempting custom docker service restart"
-    /usr/bin/systemctl --user --machine=mydockerusername@.host restart docker.service
+    /usr/sbin/systemctl --user --machine=mydockerusername@.host restart docker.service
     printf '%s\n' "$curVersions" > /etc/my-combined-docker-version-string
     echo "[CustomScript] docker service restart successful"
 fi
