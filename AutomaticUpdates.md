@@ -247,7 +247,7 @@ ExecStart=/usr/bin/docker compose up -d --remove-orphans
 To make this more aggressive, change the last two lines to
 ```
 ExecStart=/usr/bin/docker compose pull --include-deps --policy always
-ExecStart=/usr/bin/docker compose up -d --remove-orphans --force-recreate --build
+ExecStart=/usr/bin/docker compose up -d --remove-orphans --force-recreate --build --pull always
 ```
 Then create the file `~/.config/systemd/user/docker-compose-update.timer` with the following content to update the containers daily at 5:30am:
 ```
