@@ -324,7 +324,7 @@ services:
       # DO NOT EXPOSE SOCKET!!
 
   nginx:
-    image: nginxinc/nginx-unprivileged:alpine-slim
+    image: nginx/nginx-unprivileged:alpine-slim
     container_name: nginx
     # apply hardening baseline
     <<: *hardening
@@ -374,7 +374,7 @@ services:
       - /tmp:rw,noexec,nosuid,nodev,mode=700,uid=${NGINX_UID},gid=${NGINX_UID},size=500m,nr_inodes=400k
 
   php:
-    image: php:8.5-fpm-alpine
+    image: php:8.6-fpm-alpine
     container_name: php
     # apply hardening baseline
     <<: *hardening
